@@ -34,7 +34,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [tokenReady, setTokenReady] = useState(false)
 
   useEffect(() => {
-    bootstrapToken().then(() => setTokenReady(true))
+    bootstrapToken().then(() => {
+      setTokenReady(true)
+      const token = getToken()
+      if (!token && typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        window.location.href = '/admin/login'
+      }
+    })
   }, [])
 
   return (
