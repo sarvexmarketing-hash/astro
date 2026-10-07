@@ -1,0 +1,71 @@
+# Dependencies & Build Outputs
+node_modules/
+.next/
+dist/
+build/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment variables & secrets
+.env*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS & IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
+.kotlin/
+.agents/
+.github/
+/package-lock.json
+/.env.example
+
+# Non-web applications (Android apps & standalone backend)
+/app/
+/astroo-astrologer/
+/backend/
+/backups/
+/nginx/
+/gradle/
+/.gradle/
+/security-audit-run-*/
+/screenshots/
+/scripts/
+local.properties
+gradlew*
+*.kts
+*.properties
+generate_*.py
+docker-compose*.yml
+scratch_dump.xml
+astrologer_screen.png
+customer_screen.png
+
+# Audit and internal markdown reports
+/API_SECURITY.md
+/ARCHITECTURE.md
+/ASTROLOGY_*.md
+/BACKUP_*.md
+/CONSULTATION_*.md
+/DEPLOYMENT*.md
+/DISASTER_*.md
+/ENVIRONMENT_*.md
+/PHASE_*.md
+/PRODUCTION_*.md
+/RAILWAY_*.md
+/RBAC.md
+/SCALE.md
+/SECRET_*.md
+/SECURITY.md
+/WEBRTC_*.md
+
+# Backups
+*.git_backup

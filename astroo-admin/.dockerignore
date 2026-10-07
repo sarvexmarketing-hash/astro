@@ -1,0 +1,25 @@
+.git
+.github
+.idea
+.vscode
+.DS_Store
+*.log
+
+# Ignore environment credentials
+.env
+.env.*
+!.env.example
+
+# Ignore local build artifacts and node_modules
+node_modules
+.next
+out
+coverage
+
+# Ignore test scripts
+scripts/
+test-*.mjs
+check-*.mjs
+seed-*.mjs
+list-*.mjs
+create-*.mjs
