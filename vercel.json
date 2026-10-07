@@ -1,0 +1,49 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "astroo-admin": {
+      "root": "astroo-admin",
+      "framework": "nextjs"
+    },
+    "astroo-astrologer-web": {
+      "root": "astroo-astrologer-web",
+      "framework": "nextjs"
+    },
+    "astroo-customer-web": {
+      "root": "astroo-customer-web",
+      "framework": "nextjs"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": {
+        "service": "astroo-admin"
+      }
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": {
+        "service": "astroo-admin"
+      }
+    },
+    {
+      "source": "/astrologer",
+      "destination": {
+        "service": "astroo-astrologer-web"
+      }
+    },
+    {
+      "source": "/astrologer/(.*)",
+      "destination": {
+        "service": "astroo-astrologer-web"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "astroo-customer-web"
+      }
+    }
+  ]
+}

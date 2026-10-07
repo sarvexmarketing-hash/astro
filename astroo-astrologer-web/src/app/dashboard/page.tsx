@@ -85,7 +85,7 @@ export default function AstrologerDashboard() {
     }
   };
 
-  const todayEarnings = earningsData?.earnings?.available_balance ?? earningsData?.earnings?.total_earnings ?? 0;
+  const todayEarnings = earningsData?.earnings?.available_balance ?? earningsData?.earnings?.total_earned ?? 0;
   const totalConsultations = profile?.total_consultations ?? 0;
   const rating = profile?.rating ? Number(profile.rating).toFixed(1) : "5.0";
   const experienceYears = profile?.experience_years || 0;

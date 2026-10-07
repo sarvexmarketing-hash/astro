@@ -129,7 +129,7 @@ export default function AstrologerEarningsPage() {
                 {earningsData.commissions.map((comm) => {
                   const gross = Number(comm.gross_amount) || 0;
                   const fee = Number(comm.platform_fee) || 0;
-                  const rawNet = comm.provider_net_amount ?? (comm as any).net_payout ?? (gross - fee);
+                  const rawNet = (comm as any).provider_net_amount ?? comm.net_payout ?? (gross - fee);
                   const netPayout = isNaN(Number(rawNet)) ? Math.max(0, gross - fee) : Number(rawNet);
                   return (
                     <tr key={comm.id} className="hover:bg-[#FFFDF7]">
