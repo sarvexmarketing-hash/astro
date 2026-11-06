@@ -4,8 +4,14 @@ export interface User {
   phone: string | null;
   role: 'customer' | 'astrologer' | 'admin' | 'super_admin';
   fullName?: string;
+  full_name?: string;
   avatarUrl?: string;
+  avatar_url?: string;
   isVerified?: boolean;
+  is_verified?: boolean;
+  verification_status?: 'pending' | 'approved' | 'rejected' | 'resubmit';
+  astrologerProfile?: AstrologerProfile | null;
+  created_at?: string;
 }
 
 export interface AstrologerProfile {

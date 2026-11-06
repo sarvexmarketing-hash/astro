@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, Loader2, Lock, Mail, Phone, User } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, Mail, Phone, User, ShieldCheck } from "lucide-react";
 
 export default function AstrologerRegisterPage() {
   const router = useRouter();
@@ -153,9 +153,15 @@ export default function AstrologerRegisterPage() {
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <span>Create Profile & Continue</span>
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-900" />
+                  <span>Submit Application for Verification</span>
+                </span>
               )}
             </button>
+            <p className="text-[11px] text-[#71717A] text-center mt-2 leading-tight">
+              🔒 Your application is submitted to the Astrowave Admin team for KYC & credential verification.
+            </p>
           </div>
         </form>
 

@@ -164,6 +164,16 @@ export default function AstrologersPage() {
             }
           }
 
+          // Normalize verification status safely
+          const rawStatus = (p.verification_status || '').toLowerCase()
+          const isApproved = rawStatus === 'approved' || rawStatus === 'verified' || Boolean(p.is_verified)
+          const isPending = !isApproved && (rawStatus === 'pending' || rawStatus === '' || rawStatus === 'resubmit')
+          const isRejected = !isApproved && !isPending && (rawStatus === 'rejected')
+          const isSuspended = !isApproved && (rawStatus === 'suspended')
+
+          const normStatus: 'verified' | 'pending' | 'rejected' | 'suspended' =
+            isApproved ? 'verified' : isRejected ? 'rejected' : isSuspended ? 'suspended' : 'pending'
+
           return {
             id: p.id,
             display_name: p.display_name || 'Astrologer',
@@ -183,9 +193,9 @@ export default function AstrologersPage() {
             pending_payout_amount: pendingPayout,
             platform_commission: platformComm,
             gross_revenue: grossRev,
-            is_active: p.is_verified || false,
-            is_online: p.is_online || false,
-            verification_status: p.verification_status || (p.is_verified ? 'verified' : 'pending'),
+            is_active: isApproved,
+            is_online: isApproved ? Boolean(p.is_online) : false,
+            verification_status: normStatus,
             profile_image_url: p.avatar_url || '',
             created_at: p.created_at || new Date().toISOString(),
             education: 'Acharya in Vedic Astrology',
@@ -201,14 +211,14 @@ export default function AstrologersPage() {
                 type: 'Aadhaar / ID Proof',
                 filename: 'aadhaar_proof.pdf',
                 fileUrl: 'https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800',
-                status: p.is_verified ? 'verified' : 'pending',
+                status: isApproved ? 'verified' : 'pending',
               },
               {
                 id: 'doc-2',
                 type: 'Astrology Degree / Certification',
                 filename: 'certificate.pdf',
                 fileUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=800',
-                status: p.is_verified ? 'verified' : 'pending',
+                status: isApproved ? 'verified' : 'pending',
               }
             ]
           }
