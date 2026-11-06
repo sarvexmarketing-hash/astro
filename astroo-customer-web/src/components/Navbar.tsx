@@ -51,6 +51,7 @@ export default function Navbar() {
     { label: "Panchang", icon: "📅", href: "/muhurat" },
     { label: "Shop", icon: "🛍️", href: "/#shop" },
     { label: "Blog", icon: "📖", href: "/#blog" },
+    { label: "Astrologer Portal", icon: "🔮", href: "/astrologer/login" },
   ];
 
   const desktopNavLinks = [

@@ -8,6 +8,7 @@ const backendUrl =
     : "http://localhost:5001/api");
 
 const adminUrl = process.env.ADMIN_URL || "http://localhost:3001/admin";
+const astrologerUrl = process.env.ASTROLOGER_URL || "http://localhost:3002/astrologer";
 
 const cspHeader = `
   default-src 'self';
@@ -38,6 +39,14 @@ const nextConfig: NextConfig = {
       {
         source: "/admin/:path*",
         destination: `${adminUrl}/:path*`,
+      },
+      {
+        source: "/astrologer",
+        destination: `${astrologerUrl}`,
+      },
+      {
+        source: "/astrologer/:path*",
+        destination: `${astrologerUrl}/:path*`,
       },
     ];
   },

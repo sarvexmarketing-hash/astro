@@ -38,6 +38,7 @@ export default function Footer() {
             <Link href="/kundli" className="hover:text-[#18181B]">Free Kundli</Link>
             <Link href="/muhurat" className="hover:text-[#18181B]">Muhurat</Link>
             <Link href="/pooja" className="hover:text-[#18181B]">Pooja</Link>
+            <Link href="/astrologer/login" className="hover:text-amber-800 font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-sm">Astrologer Portal</Link>
             <Link href="/admin" className="hover:text-purple-700 font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded-sm">Admin</Link>
           </div>
         </div>
