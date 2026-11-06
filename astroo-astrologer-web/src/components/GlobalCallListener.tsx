@@ -8,7 +8,21 @@ import { Phone, PhoneOff, Video } from 'lucide-react';
 
 export default function GlobalCallListener() {
   const router = useRouter();
-  const { incomingRequest, incomingCall, acceptCall, rejectCall } = useSocket();
+  const { socket, incomingRequest, incomingCall, acceptCall, rejectCall } = useSocket();
+
+  React.useEffect(() => {
+    if (!socket) return;
+    const handleAutoStarted = (data: any) => {
+      const id = data?.consultationId || data?.id;
+      if (id) {
+        router.push(`/chat/${id}`);
+      }
+    };
+    socket.on('pending_chat_autostarted', handleAutoStarted);
+    return () => {
+      socket.off('pending_chat_autostarted', handleAutoStarted);
+    };
+  }, [socket, router]);
 
   return (
     <>

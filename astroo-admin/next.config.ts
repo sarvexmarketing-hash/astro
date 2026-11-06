@@ -4,6 +4,16 @@ const configuredApi = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_UR
 
 const nextConfig: NextConfig = {
   basePath: "/admin",
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/admin",
+        permanent: false,
+        basePath: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

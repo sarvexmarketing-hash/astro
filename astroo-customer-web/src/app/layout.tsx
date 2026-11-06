@@ -7,8 +7,35 @@ import Footer from '../components/Footer';
 import GlobalIncomingCall from '../components/GlobalIncomingCall';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://astrowave.in'),
   title: 'Astrowave — Live Vedic Astrology, Kundli, Tarot & Pooja Consultations',
   description: 'Connect live with certified Vedic Astrologers, Tarot Readers, and Pandits. 24x7 instant chat, voice call, video consultation, free Janam Kundli, and Shubh Muhurat.',
+  keywords: 'astrology, vedic astrology, kundli, tarot, horoscope, rashifal, astrologers, online pooja, muhurat',
+  authors: [{ name: 'Astrowave' }],
+  icons: {
+    icon: '/images/app_logo.png',
+    apple: '/images/app_logo.png',
+  },
+  openGraph: {
+    title: 'Astrowave — Live Vedic Astrology Consultations',
+    description: 'Instant chat, audio & video consultation with top verified Vedic masters.',
+    url: 'https://astrowave.in',
+    siteName: 'Astrowave',
+    images: [
+      {
+        url: '/images/app_logo.png',
+        width: 512,
+        height: 512,
+        alt: 'Astrowave Logo',
+      },
+    ],
+    locale: 'en_IN',
+    type: 'website',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

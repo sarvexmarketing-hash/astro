@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { astrologerService } from "@/services/astrologer";
@@ -24,13 +25,14 @@ import {
 } from "lucide-react";
 
 export default function AstrologerDashboard() {
+  const router = useRouter();
   const { user } = useAuth();
   const { isConnected } = useSocket();
 
   const [profile, setProfile] = useState<AstrologerProfile | null>(null);
   const [earningsData, setEarningsData] = useState<EarningsData | null>(null);
   const [pendingRequests, setPendingRequests] = useState<Consultation[]>([]);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
   const [chatEnabled, setChatEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +51,7 @@ export default function AstrologerDashboard() {
 
       if (prof.status === "fulfilled") {
         setProfile(prof.value);
-        setIsOnline(prof.value.is_online ?? true);
+        setIsOnline(Boolean(prof.value?.is_online));
       }
       if (earnings.status === "fulfilled") {
         setEarningsData(earnings.value);
@@ -78,8 +80,12 @@ export default function AstrologerDashboard() {
     const nextStatus = !isOnline;
     setIsOnline(nextStatus);
     try {
-      await astrologerService.toggleOnline(nextStatus);
+      const res: any = await astrologerService.toggleOnline(nextStatus);
       window.dispatchEvent(new CustomEvent('astro_online_status_changed', { detail: { isOnline: nextStatus } }));
+
+      if (nextStatus && res?.autoStartedConsultation?.id) {
+        router.push(`/chat/${res.autoStartedConsultation.id}`);
+      }
     } catch (err) {
       setIsOnline(!nextStatus); // rollback
     }
@@ -147,17 +153,32 @@ export default function AstrologerDashboard() {
           {/* Online Toggle Row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
-              <span className="w-2 h-2 rounded-full bg-[#22C55E]"></span>
-              <span className="text-sm font-bold text-[#18181B]">
-                You are Online (Discoverable)
+              <span
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  isOnline
+                    ? "bg-[#10B981] animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.7)]"
+                    : "bg-zinc-400"
+                }`}
+              />
+              <span
+                className={`w-2 h-2 rounded-full transition-all ${
+                  isOnline ? "bg-[#22C55E]" : "bg-zinc-300"
+                }`}
+              />
+              <span
+                className={`text-sm font-bold transition-colors ${
+                  isOnline ? "text-[#18181B]" : "text-[#71717A]"
+                }`}
+              >
+                {isOnline ? "You are Online (Discoverable)" : "You are Offline (Not Discoverable)"}
               </span>
             </div>
 
             {/* Toggle Switch */}
             <button
               onClick={handleToggleOnline}
-              className={`w-13 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out focus:outline-none flex items-center ${
+              aria-label={isOnline ? "Switch to offline mode" : "Switch to online mode"}
+              className={`w-13 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out focus:outline-none flex items-center cursor-pointer ${
                 isOnline ? "bg-[#10B981] justify-end" : "bg-slate-300 justify-start"
               }`}
             >

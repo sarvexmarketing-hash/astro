@@ -101,12 +101,10 @@ function AstrologerLoginScreenContent() {
       <div className="w-full max-w-sm mx-auto flex flex-col items-center">
         {/* Logo & Header (LoginScreen.kt lines 68-105) */}
         <div className="w-[72px] h-[72px] relative mb-3">
-          <Image
-            src="/images/app_logo.png"
+          <img
+            src="/astrologer/images/app_logo.png"
             alt="Astrowave Logo"
-            fill
-            className="rounded-2xl shadow-md object-cover"
-            priority
+            className="w-full h-full rounded-2xl shadow-md object-cover"
           />
         </div>
 

@@ -35,8 +35,8 @@ export default function Navbar() {
     }
   }, [user]);
 
-  // Completely hide customer header on /admin and /astrologers routes
-  if (pathname?.startsWith("/admin") || pathname?.startsWith("/astrologers")) {
+  // Completely hide customer header on /admin routes
+  if (pathname?.startsWith("/admin")) {
     return null;
   }
 

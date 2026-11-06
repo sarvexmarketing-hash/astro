@@ -40,12 +40,10 @@ export default function PortalGuard({ children }: PortalGuardProps) {
     return (
       <div className="min-h-screen bg-[#FFFDF7] flex flex-col items-center justify-center p-6 text-center text-[#18181B]">
         <div className="w-20 h-20 relative mb-4">
-          <Image
-            src="/images/app_logo.png"
+          <img
+            src="/astrologer/images/app_logo.png"
             alt="Astrowave"
-            fill
-            className="rounded-2xl shadow-md object-contain"
-            priority
+            className="w-full h-full rounded-2xl shadow-md object-contain"
           />
         </div>
         <h2 className="text-lg font-bold text-[#18181B] tracking-tight">ASTROWAVE</h2>

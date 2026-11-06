@@ -43,6 +43,7 @@ export default function ChatScreenPage({
   const [messages, setMessages] = useState<LocalChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [sessionDuration, setSessionDuration] = useState(0);
+  const [hasAstrologerJoined, setHasAstrologerJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -53,15 +54,15 @@ export default function ChatScreenPage({
   const ratePerMin = astrologer?.per_minute_rate || 25;
   const astrologerName = astrologer?.display_name || "Astrologer";
 
-  // Session Duration Timer (ChatScreen.kt line 90)
+  // Session Duration Timer (CRITICAL: runs ONLY when astrologer has joined the consultation)
   useEffect(() => {
-    if (consultation?.id) {
+    if (consultation?.id && consultation?.state === "ACTIVE" && hasAstrologerJoined) {
       const timer = setInterval(() => {
         setSessionDuration((prev) => prev + 1);
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [consultation?.id]);
+  }, [consultation?.id, consultation?.state, hasAstrologerJoined]);
 
   useEffect(() => {
     initializeChat();
@@ -89,6 +90,15 @@ export default function ChatScreenPage({
         type: "chat",
       });
       setConsultation(cons);
+
+      const isJoined = Boolean(cons?.astrologer_joined_at);
+      setHasAstrologerJoined(isJoined);
+      if (isJoined && cons.astrologer_joined_at) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - new Date(cons.astrologer_joined_at).getTime()) / 1000));
+        setSessionDuration(elapsed);
+      } else {
+        setSessionDuration(0);
+      }
 
       // 3. Load Chat History if exists
       if (cons.id) {
@@ -183,14 +193,106 @@ export default function ChatScreenPage({
     };
 
     socket.on("chat_message", handleNewMessage);
+    socket.on("new_message", handleNewMessage);
+    socket.on("receive_message", handleNewMessage);
     socket.on("consultation_ended", () => {
       router.push("/astrologers");
     });
 
+    const handleAstrologerJoined = (payload: any) => {
+      if (
+        payload.consultationId === consultation?.id ||
+        payload.id === consultation?.id ||
+        payload.astrologerId === astrologerId
+      ) {
+        setHasAstrologerJoined(true);
+        setConsultation((prev) => (prev ? { ...prev, state: "ACTIVE", astrologer_joined_at: payload.astrologerJoinedAt || new Date().toISOString() } : prev));
+        setAstrologer((prev) => (prev ? { ...prev, is_online: true } : prev));
+        setSessionDuration(0);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `sys_join_${Date.now()}`,
+            text: `✨ ${astrologerName} joined the chat. Consultation and billing started!`,
+            isFromUser: false,
+            timestamp: new Date().toISOString(),
+            status: "SENT",
+            isSystem: true,
+          },
+        ]);
+      }
+    };
+
+    const handleUserJoinedRoom = (payload: any) => {
+      if (
+        payload.consultationId === consultation?.id &&
+        (payload.userRole === "astrologer" || payload.eventType === "astrologer_joined")
+      ) {
+        setHasAstrologerJoined(true);
+        setConsultation((prev) => (prev ? { ...prev, state: "ACTIVE" } : prev));
+        setAstrologer((prev) => (prev ? { ...prev, is_online: true } : prev));
+      }
+    };
+
+    const handleConsultationStatus = (payload: any) => {
+      if (payload.consultationId === consultation?.id) {
+        if (payload.astrologerJoined) {
+          setHasAstrologerJoined(true);
+          setConsultation((prev) => (prev ? { ...prev, state: "ACTIVE" } : prev));
+          if (payload.astrologerJoinedAt) {
+            const elapsed = Math.max(0, Math.floor((Date.now() - new Date(payload.astrologerJoinedAt).getTime()) / 1000));
+            setSessionDuration(elapsed);
+          }
+        }
+      }
+    };
+
+    const handleConsultationStarted = (payload: any) => {
+      if (
+        payload.consultationId === consultation?.id ||
+        payload.id === consultation?.id ||
+        payload.astrologerId === astrologerId
+      ) {
+        setAstrologer((prev) => (prev ? { ...prev, is_online: true } : prev));
+        if (payload.astrologerJoined) {
+          setHasAstrologerJoined(true);
+          setConsultation((prev) => (prev ? { ...prev, state: "ACTIVE" } : prev));
+        }
+      }
+    };
+
+    const handlePresenceChanged = (payload: any) => {
+      if (payload.astrologerId === astrologerId) {
+        setAstrologer((prev) => (prev ? { ...prev, is_online: Boolean(payload.isOnline) } : prev));
+      }
+    };
+
+    const handleConsultationTick = (tick: any) => {
+      if (tick.consultationId === consultation?.id && tick.elapsedSeconds !== undefined) {
+        setHasAstrologerJoined(true);
+        setSessionDuration(Number(tick.elapsedSeconds));
+      }
+    };
+
+    socket.on("astrologer_joined", handleAstrologerJoined);
+    socket.on("user_joined_room", handleUserJoinedRoom);
+    socket.on("consultation_status", handleConsultationStatus);
+    socket.on("consultation_started", handleConsultationStarted);
+    socket.on("astrologer_presence_changed", handlePresenceChanged);
+    socket.on("consultation_tick", handleConsultationTick);
+
     return () => {
       socket.off("chat_message", handleNewMessage);
+      socket.off("new_message", handleNewMessage);
+      socket.off("receive_message", handleNewMessage);
+      socket.off("astrologer_joined", handleAstrologerJoined);
+      socket.off("user_joined_room", handleUserJoinedRoom);
+      socket.off("consultation_status", handleConsultationStatus);
+      socket.off("consultation_started", handleConsultationStarted);
+      socket.off("astrologer_presence_changed", handlePresenceChanged);
+      socket.off("consultation_tick", handleConsultationTick);
     };
-  }, [socket, consultation?.id]);
+  }, [socket, consultation?.id, astrologerId, astrologerName]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -212,6 +314,18 @@ export default function ChatScreenPage({
     setMessages((prev) => [...prev, newMsg]);
     setMessageText("");
 
+    // 1. Instant Socket.IO emission to room and astrologer
+    if (socket) {
+      socket.emit("send_message", {
+        consultationId: consultation.id,
+        recipientId: astrologerId,
+        content: trimmed,
+        messageType: "text",
+        id: msgId,
+      });
+    }
+
+    // 2. HTTP persistence
     try {
       await consultationsService.sendMessage({
         consultationId: consultation.id,
@@ -222,9 +336,16 @@ export default function ChatScreenPage({
         prev.map((m) => (m.id === msgId ? { ...m, status: "SENT" } : m))
       );
     } catch {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msgId ? { ...m, status: "FAILED" } : m))
-      );
+      // If socket is connected, keep message as SENT
+      if (isConnected) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msgId ? { ...m, status: "SENT" } : m))
+        );
+      } else {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msgId ? { ...m, status: "FAILED" } : m))
+        );
+      }
     }
   };
 
@@ -242,7 +363,7 @@ export default function ChatScreenPage({
   const minutes = Math.floor(sessionDuration / 60);
   const seconds = sessionDuration % 60;
   const formattedTime = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  const currentCost = (minutes + (seconds > 0 ? 1 : 0)) * ratePerMin;
+  const currentCost = hasAstrologerJoined ? Math.max(0, (minutes + (seconds > 0 ? 1 : 0)) * ratePerMin) : 0;
 
   if (isLoading) {
     return (
@@ -280,18 +401,10 @@ export default function ChatScreenPage({
           <div className="flex flex-col sm:flex-row gap-2.5 w-full pt-3">
             <button
               onClick={() => router.push("/astrologers")}
-              className="flex-1 py-3 px-4 rounded-xl bg-[#FEF08A] hover:bg-[#FACC15] text-[#78350F] border border-[#F7C93E] text-xs font-bold transition-all shadow-2xs cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-[#FEF08A] hover:bg-[#FACC15] text-[#78350F] border border-[#F7C93E] text-xs font-bold transition-all shadow-2xs cursor-pointer"
             >
-              Browse Other Astrologers
+              Browse Available Astrologers
             </button>
-            <a
-              href="http://localhost:3002/dashboard"
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 py-3 px-4 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#B45309] text-xs font-bold transition-all text-center flex items-center justify-center cursor-pointer"
-            >
-              Astrologer Portal ➔
-            </a>
           </div>
         </div>
       );
@@ -356,10 +469,17 @@ export default function ChatScreenPage({
 
           <div className="min-w-0">
             <h2 className="text-sm font-bold text-[#18181B] truncate">{astrologerName}</h2>
-            <div className="flex items-center gap-1.5 text-xs text-[#10B981] font-semibold">
-              <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-              <span>Online (₹{ratePerMin}/min)</span>
-            </div>
+            {consultation?.state === "ACTIVE" || astrologer?.is_online ? (
+              <div className="flex items-center gap-1.5 text-xs text-[#10B981] font-semibold">
+                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                <span>Online (₹{ratePerMin}/min)</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-xs text-amber-600 font-semibold">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>Offline &bull; Request Queued</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -383,9 +503,52 @@ export default function ChatScreenPage({
 
       {/* ── Timer and Billing Bar (ChatScreen.kt line 470) ── */}
       <div className="bg-[#FEF3C7] border-b border-[#FDE68A] px-4 py-2 flex items-center justify-between text-xs sm:text-sm font-bold text-[#92400E]">
-        <span>Time: {formattedTime}</span>
-        <span>Cost: ₹{currentCost}</span>
+        <div className="flex items-center gap-1.5">
+          {hasAstrologerJoined ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Time: {formattedTime}</span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+              <span>Waiting for {astrologerName} to join...</span>
+            </>
+          )}
+        </div>
+
+        <div>
+          {hasAstrologerJoined ? (
+            <span className="text-emerald-900 font-extrabold">Cost: ₹{currentCost}</span>
+          ) : (
+            <span className="text-amber-900 font-semibold">
+              ₹0.00 billed <span className="opacity-75 font-normal text-[11px]">(₹{ratePerMin}/min once joined)</span>
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* ── Waiting for Astrologer to Join Banner ── */}
+      {!hasAstrologerJoined && (
+        <div className="mx-4 mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 text-amber-950 shadow-xs flex items-start gap-3 max-w-2xl sm:mx-auto sm:w-full animate-in fade-in">
+          <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+            <Clock className="w-4 h-4 text-amber-700 animate-pulse" />
+          </div>
+          <div className="space-y-0.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h4 className="text-xs font-bold text-amber-900">
+                Waiting for {astrologerName} to enter the chat
+              </h4>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-bold">
+                No amount deducted
+              </span>
+            </div>
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              Your wallet will <strong>not be deducted</strong> until the astrologer enters this chat. You can type your questions or birth details below in advance.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Messages List (ChatScreen.kt line 493) ── */}
       <div

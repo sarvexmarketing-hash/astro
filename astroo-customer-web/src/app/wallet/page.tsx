@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { walletService } from "../../services/wallet";
 import { Wallet, Transaction } from "../../lib/types";
-import { getRazorpayKey } from "../../lib/api-config";
+import { openRazorpayStandardCheckout } from "../../lib/razorpay";
 import {
   ArrowLeft,
   Info,
@@ -66,81 +66,42 @@ export default function WalletPage() {
     }
   }, [socketBalance]);
 
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if ((window as any).Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handlePay = async () => {
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsProcessingPayment(true);
 
     try {
-      const isLoaded = await loadRazorpayScript();
-      if (!isLoaded) {
-        throw new Error("Unable to load Razorpay payment gateway. Please check your connection.");
-      }
-
-      // 1. Create order on backend
-      const orderData = await walletService.createRechargeOrder(selectedAmount);
-
-      // 2. Open Razorpay options
-      const options = {
-        key: getRazorpayKey(),
-        amount: orderData.amount,
-        currency: orderData.currency || "INR",
+      await openRazorpayStandardCheckout({
+        amount: selectedAmount * 100, // converted to smallest currency unit (paise)
+        currency: "INR",
         name: "Astrowave",
         description: `Wallet Recharge: ₹${selectedAmount}`,
-        order_id: orderData.orderId,
         prefill: {
           name: user?.fullName || "Seeker",
           email: user?.email || "",
           contact: user?.phone || "",
         },
-        theme: {
-          color: "#F7C93E",
+        notes: {
+          userId: user?.id || "",
+          purpose: "wallet_recharge",
         },
-        handler: async (response: any) => {
-          try {
-            const verification = await walletService.verifyPayment({
-              orderId: response.razorpay_order_id || orderData.orderId,
-              paymentId: response.razorpay_payment_id,
-              signature: response.razorpay_signature,
-            });
-
-            if (verification.success) {
-              setSuccessMessage(`Payment of ₹${selectedAmount} successful!`);
-              await loadWalletData();
-            } else {
-              setErrorMessage("Payment verification failed. If debited, it will be credited within 24 hours.");
-            }
-          } catch (err: any) {
-            setErrorMessage(err.message || "Payment verification failed.");
-          } finally {
-            setIsProcessingPayment(false);
-          }
+        themeColor: "#F7C93E",
+        onSuccess: async () => {
+          setSuccessMessage(`Payment of ₹${selectedAmount} successful! Wallet credited.`);
+          setIsProcessingPayment(false);
+          await loadWalletData();
         },
-        modal: {
-          ondismiss: () => {
-            setIsProcessingPayment(false);
-          },
+        onError: (errMessage: string) => {
+          setErrorMessage(errMessage);
+          setIsProcessingPayment(false);
         },
-      };
-
-      const razorpayInstance = new (window as any).Razorpay(options);
-      razorpayInstance.open();
+        onDismiss: () => {
+          setIsProcessingPayment(false);
+        },
+      });
     } catch (err: any) {
-      setErrorMessage(err.message || "Failed to initiate recharge.");
+      setErrorMessage(err.message || "Failed to initiate payment.");
       setIsProcessingPayment(false);
     }
   };

@@ -6,12 +6,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   basePath: "/astrologer",
   async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${backendUrl}/:path*`,
-      },
-    ];
+    return [];
   },
 };
 

@@ -7,10 +7,13 @@ const DEFAULT_SOCKET_URL = process.env.NODE_ENV === 'production'
   : 'http://localhost:5001';
 
 export function getApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
   if (typeof window !== 'undefined') {
     return '/api';
   }
-  return process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
+  return process.env.API_BASE_URL || DEFAULT_API_URL;
 }
 
 export function getSocketBaseUrl(): string {

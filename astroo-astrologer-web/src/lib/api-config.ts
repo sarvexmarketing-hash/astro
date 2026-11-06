@@ -8,7 +8,7 @@ const DEFAULT_SOCKET_URL = process.env.NODE_ENV === 'production'
 
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
-    return '/api';
+    return '/astrologer/api';
   }
   return process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
 }

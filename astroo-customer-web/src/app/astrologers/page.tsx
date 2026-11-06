@@ -28,6 +28,7 @@ import {
   TrendingUp,
   UserCheck,
   Zap,
+  ArrowLeft,
 } from "lucide-react";
 
 // Curated fallbacks in case of initial database hydration
@@ -319,9 +320,18 @@ function AstrologersListContent() {
           {/* Header Title */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF08A] text-[#78350F] text-xs font-bold border border-[#F7C93E] mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
-                <span>Verified Vedic Practitioners</span>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-[#FEF08A] text-[#18181B] text-xs font-bold border border-[#FDE68A] shadow-2xs transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-[#D97706]" />
+                  <span>Back to Home</span>
+                </Link>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF08A] text-[#78350F] text-xs font-bold border border-[#F7C93E]">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
+                  <span>Verified Vedic Practitioners</span>
+                </div>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#18181B] tracking-tight">
                 {activeChannel === "call" ? "Call an Astrologer" : "Chat with Astrologer"}
@@ -630,7 +640,13 @@ function AstrologersListContent() {
                     }`}
                   >
                     <MessageSquare className="w-3.5 h-3.5 text-[#B45309]" />
-                    <span>{user?.id === astro.id ? "Your Profile" : "Chat"}</span>
+                    <span>
+                      {user?.id === astro.id
+                        ? "Your Profile"
+                        : astro.is_online
+                        ? "Chat"
+                        : "Request Chat"}
+                    </span>
                   </button>
 
                   {/* Call Button */}

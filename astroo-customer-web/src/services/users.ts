@@ -21,4 +21,9 @@ export const usersService = {
     const res = await api.put('/users/notifications/read-all');
     return res;
   },
+
+  async deleteAccount() {
+    const res = await api.delete('/users/me');
+    return res;
+  },
 };

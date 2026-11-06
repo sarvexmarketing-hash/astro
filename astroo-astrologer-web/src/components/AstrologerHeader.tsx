@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { astrologerService } from '../services/astrologer';
 import { usersService } from '../services/users';
 import { useAuth } from '../context/AuthContext';
@@ -12,8 +13,9 @@ interface HeaderProps {
 }
 
 export default function AstrologerHeader({ onMenuToggle }: HeaderProps) {
+  const router = useRouter();
   const { user } = useAuth();
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -48,12 +50,16 @@ export default function AstrologerHeader({ onMenuToggle }: HeaderProps) {
     try {
       setIsUpdatingStatus(true);
       const nextStatus = !isOnline;
-      await astrologerService.updateStatus({
+      const res: any = await astrologerService.updateStatus({
         isOnline: nextStatus,
         isBusy: false,
       });
       setIsOnline(nextStatus);
       window.dispatchEvent(new CustomEvent('astro_online_status_changed', { detail: { isOnline: nextStatus } }));
+
+      if (nextStatus && res?.autoStartedConsultation?.id) {
+        router.push(`/chat/${res.autoStartedConsultation.id}`);
+      }
     } catch (err) {
       console.error('Error toggling online status:', err);
     } finally {

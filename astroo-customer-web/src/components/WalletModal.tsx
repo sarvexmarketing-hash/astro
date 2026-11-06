@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { walletService } from '../services/wallet';
-import { getRazorpayKey } from '../lib/api-config';
 import { useAuth } from '../context/AuthContext';
+import { openRazorpayStandardCheckout } from '../lib/razorpay';
 import { X, Wallet as WalletIcon, CheckCircle2, ShieldCheck, Zap, Loader2, AlertCircle } from 'lucide-react';
 
 interface WalletModalProps {
@@ -26,30 +26,9 @@ export default function WalletModal({
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
 
-  const rechargePacks = [
-    { amount: 100, bonus: '₹0 Bonus', tag: null },
-    { amount: 250, bonus: '+₹25 Extra', tag: 'Popular' },
-    { amount: 500, bonus: '+₹75 Extra', tag: 'Recommended' },
-    { amount: 1000, bonus: '+₹200 Extra', tag: 'Best Value' },
-    { amount: 2500, bonus: '+₹600 Extra', tag: 'VIP' },
-  ];
+  const rechargePacks = [100, 250, 500, 1000, 2500];
 
   const effectiveAmount = customAmount ? parseFloat(customAmount) || 0 : selectedAmount;
-
-  // Dynamically load Razorpay SDK
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if ((window as any).Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
 
   const handleRecharge = async () => {
     if (!effectiveAmount || effectiveAmount < 10) {
@@ -61,66 +40,37 @@ export default function WalletModal({
       setIsLoading(true);
       setError(null);
 
-      // 1. Create order on backend
-      const order = await walletService.createRechargeOrder(effectiveAmount);
-
-      // 2. Load script
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        setError('Failed to load payment gateway. Please check internet connection.');
-        setIsLoading(false);
-        return;
-      }
-
-      // 3. Open Razorpay Checkout modal
-      const options = {
-        key: getRazorpayKey(),
+      await openRazorpayStandardCheckout({
         amount: Math.round(effectiveAmount * 100),
         currency: 'INR',
         name: 'Astrowave Consultation',
         description: `Wallet Recharge: ₹${effectiveAmount}`,
-        order_id: order.orderId,
         prefill: {
           name: user?.fullName || 'Customer',
           email: user?.email || '',
           contact: user?.phone || '',
         },
-        theme: {
-          color: '#f59e0b',
+        notes: {
+          userId: user?.id || '',
+          purpose: 'wallet_recharge',
         },
-        handler: async (response: any) => {
-          try {
-            setIsLoading(true);
-            const verifyRes = await walletService.verifyPayment({
-              orderId: response.razorpay_order_id,
-              paymentId: response.razorpay_payment_id,
-              signature: response.razorpay_signature,
-            });
-
-            setIsSuccess(true);
-            const updatedWallet = await walletService.getWallet();
-            setTimeout(() => {
-              onSuccess(Number(updatedWallet.balance));
-            }, 1200);
-          } catch (verifyErr: any) {
-            setError(verifyErr.message || 'Payment verification failed');
-          } finally {
-            setIsLoading(false);
-          }
+        themeColor: '#f59e0b',
+        onSuccess: async () => {
+          setIsSuccess(true);
+          const updatedWallet = await walletService.getWallet();
+          setTimeout(() => {
+            onSuccess(Number(updatedWallet.balance));
+          }, 1200);
+          setIsLoading(false);
         },
-        modal: {
-          ondismiss: () => {
-            setIsLoading(false);
-          },
+        onError: (errMessage: string) => {
+          setError(errMessage);
+          setIsLoading(false);
         },
-      };
-
-      const razorpay = new (window as any).Razorpay(options);
-      razorpay.on('payment.failed', (failedRes: any) => {
-        setError(failedRes.error?.description || 'Payment was unsuccessful');
-        setIsLoading(false);
+        onDismiss: () => {
+          setIsLoading(false);
+        },
       });
-      razorpay.open();
     } catch (err: any) {
       setError(err.message || 'Could not initiate recharge');
       setIsLoading(false);
@@ -177,35 +127,27 @@ export default function WalletModal({
             {/* Predefined Recharge Packs */}
             <div>
               <label className="block text-xs font-bold text-[#18181B] mb-2">
-                Select Recharge Pack
+                Select Recharge Amount
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {rechargePacks.map((pack) => {
-                  const isSelected = selectedAmount === pack.amount && !customAmount;
+              <div className="grid grid-cols-3 gap-2.5">
+                {rechargePacks.map((amount) => {
+                  const isSelected = selectedAmount === amount && !customAmount;
                   return (
                     <button
-                      key={pack.amount}
+                      key={amount}
                       type="button"
                       onClick={() => {
-                        setSelectedAmount(pack.amount);
+                        setSelectedAmount(amount);
                         setCustomAmount('');
                       }}
-                      className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      className={`py-3 px-3 rounded-2xl border text-center transition-all cursor-pointer ${
                         isSelected
-                          ? 'border-2 border-[#F7C93E] bg-[#FEF08A] shadow-xs scale-[1.02]'
-                          : 'border border-[#FDE68A] bg-[#FFFDF7] hover:bg-[#FFFBEB] hover:border-[#F7C93E]'
+                          ? 'border-2 border-[#F7C93E] bg-[#FEF08A] shadow-xs text-[#78350F] font-bold scale-[1.02]'
+                          : 'border border-[#FDE68A] bg-[#FFFDF7] hover:bg-[#FFFBEB] hover:border-[#F7C93E] text-[#18181B] font-semibold'
                       }`}
                     >
-                      {pack.tag && (
-                        <span className="absolute -top-2 right-2 px-2 py-0.5 rounded-full bg-[#F7C93E] text-[9px] font-black text-[#78350F] uppercase border border-amber-300 shadow-2xs">
-                          {pack.tag}
-                        </span>
-                      )}
-                      <div className={`font-bold text-base ${isSelected ? 'text-[#78350F]' : 'text-[#18181B]'}`}>
-                        ₹{pack.amount}
-                      </div>
-                      <div className="text-[11px] text-[#15803D] font-bold mt-0.5">
-                        {pack.bonus}
+                      <div className="font-bold text-base sm:text-lg">
+                        ₹{amount}
                       </div>
                     </button>
                   );

@@ -35,6 +35,7 @@ export interface Consultation {
   state: 'REQUESTED' | 'ACCEPTED' | 'ACTIVE' | 'IN_PROGRESS' | 'ENDED' | 'CANCELLED' | 'EXPIRED' | 'REFUNDED';
   rate_per_minute: number;
   start_time?: string | null;
+  astrologer_joined_at?: string | null;
   end_time?: string | null;
   total_amount?: number;
   customer_name?: string;
