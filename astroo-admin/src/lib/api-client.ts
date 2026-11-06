@@ -47,6 +47,7 @@ async function request<T = any>(endpoint: string, options: RequestInit = {}): Pr
   const response = await fetch(url, {
     ...options,
     headers,
+    credentials: 'include',
   });
 
   const data = await response.json().catch(() => ({}));
