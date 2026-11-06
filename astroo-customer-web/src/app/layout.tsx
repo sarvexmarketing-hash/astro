@@ -13,7 +13,11 @@ export const metadata: Metadata = {
   keywords: 'astrology, vedic astrology, kundli, tarot, horoscope, rashifal, astrologers, online pooja, muhurat',
   authors: [{ name: 'Astrowave' }],
   icons: {
-    icon: '/images/app_logo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/images/app_logo.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
     apple: '/images/app_logo.png',
   },
   openGraph: {
@@ -45,6 +49,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/images/app_logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/images/app_logo.png" />
+      </head>
       <body className="bg-[#FFFDF7] text-[#18181B] min-h-screen flex flex-col antialiased selection:bg-[#F7C93E] selection:text-[#18181B]">
         <AuthProvider>
           <SocketProvider>
