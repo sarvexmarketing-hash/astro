@@ -1,6 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
+import logoImg from "../../../public/logo.png"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
@@ -107,11 +109,16 @@ export function Sidebar({ className, isMobileOpen, onClose }: { className?: stri
     <div className={cn("pb-12 h-screen border-r bg-card flex flex-col", className)}>
       <div className="space-y-4 py-4 flex-1 overflow-y-auto">
         <div className="px-3 py-2 flex items-center justify-between lg:justify-start">
-          <Link href="/" className="flex items-center gap-2 px-4 mb-4">
-            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-              A
-            </div>
-            <h2 className="text-xl font-bold tracking-tight text-primary">
+          <Link href="/" className="flex items-center gap-2.5 px-4 mb-4">
+            <Image
+              src={logoImg}
+              alt="Astrowave Logo"
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-lg object-contain shadow-xs"
+              priority
+            />
+            <h2 className="text-lg font-bold tracking-tight text-primary">
               ASTROWAVE ADMIN
             </h2>
           </Link>

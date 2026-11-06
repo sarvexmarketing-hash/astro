@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react'
 import Image from 'next/image'
+import logoImg from '../../../public/logo.png'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { login } from './actions'
 import { setToken } from '@/lib/api-client'
@@ -166,10 +167,13 @@ export default function LoginPage() {
         {/* Official Brand Logo & Header */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 relative mb-3">
-            <img
-              src="/logo.png"
+            <Image
+              src={logoImg}
               alt="Astrowave Logo"
-              className="w-full h-full rounded-2xl shadow-sm object-contain"
+              width={64}
+              height={64}
+              priority
+              className="w-16 h-16 rounded-2xl shadow-sm object-contain"
             />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#18181B]">
