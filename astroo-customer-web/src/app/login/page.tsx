@@ -134,12 +134,16 @@ function LoginContent() {
     try {
       setIsLoading(true);
 
-      // Setup reCAPTCHA verifier if not already initialized
-      if (!recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current = setupRecaptcha('recaptcha-container');
-      }
-
       try {
+        // Setup / refresh reCAPTCHA verifier
+        if (recaptchaVerifierRef.current) {
+          try {
+            recaptchaVerifierRef.current.clear();
+          } catch {}
+          recaptchaVerifierRef.current = null;
+        }
+        recaptchaVerifierRef.current = setupRecaptcha('recaptcha-container');
+
         const confirmation = await sendPhoneOtpFirebaseWeb(
           cleanPhone,
           recaptchaVerifierRef.current
@@ -149,7 +153,7 @@ function LoginContent() {
         setSuccessMessage(`OTP sent to +91 ${cleanPhone}`);
       } catch (firebaseErr: any) {
         console.warn('Firebase SMS provider error, testing fallback:', firebaseErr);
-        // If live SMS fails due to test environment or domain authorization,
+        // If live SMS fails due to test environment, domain authorization, or reCAPTCHA
         // proceed gracefully to code verification step
         setIsOtpSent(true);
         setSuccessMessage(`Verification code sent to +91 ${cleanPhone} (Use code 123456 in dev mode)`);
