@@ -96,7 +96,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] text-[#18181B] pb-24 selection:bg-[#F7C93E] selection:text-[#18181B]">
+    <div className="min-h-screen bg-white text-[#18181B] pb-24 selection:bg-[#F7C93E] selection:text-[#18181B]">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         {/* Top Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#FDE68A]/60">
@@ -235,7 +235,7 @@ export default function ProfilePage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Enter your full name"
-                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFDF7] border border-[#FDE68A] text-[#18181B] placeholder-[#A1A1AA] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFFFF] border border-[#FDE68A] text-[#18181B] placeholder-[#A1A1AA] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
                     required
                   />
                 </div>
@@ -250,7 +250,7 @@ export default function ProfilePage() {
                     placeholder="https://images.unsplash.com/photo-..."
                     value={avatarUrl}
                     onChange={(e) => setAvatarUrl(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFDF7] border border-[#FDE68A] text-[#18181B] placeholder-[#A1A1AA] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFFFF] border border-[#FDE68A] text-[#18181B] placeholder-[#A1A1AA] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
                   />
                 </div>
 
@@ -264,7 +264,7 @@ export default function ProfilePage() {
                     type="date"
                     value={dateOfBirth}
                     onChange={(e) => setDateOfBirth(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFDF7] border border-[#FDE68A] text-[#18181B] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFFFF] border border-[#FDE68A] text-[#18181B] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
                   />
                 </div>
 
@@ -278,7 +278,7 @@ export default function ProfilePage() {
                     type="time"
                     value={timeOfBirth}
                     onChange={(e) => setTimeOfBirth(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFDF7] border border-[#FDE68A] text-[#18181B] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFFFF] border border-[#FDE68A] text-[#18181B] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
                   />
                 </div>
 
@@ -293,7 +293,7 @@ export default function ProfilePage() {
                     value={placeOfBirth}
                     onChange={(e) => setPlaceOfBirth(e.target.value)}
                     placeholder="e.g. Mumbai, Maharashtra"
-                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFDF7] border border-[#FDE68A] text-[#18181B] placeholder-[#A1A1AA] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFFFF] border border-[#FDE68A] text-[#18181B] placeholder-[#A1A1AA] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium"
                   />
                 </div>
 
@@ -305,7 +305,7 @@ export default function ProfilePage() {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFDF7] border border-[#FDE68A] text-[#18181B] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium cursor-pointer"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-[#FFFFFF] border border-[#FDE68A] text-[#18181B] text-sm focus:outline-none focus:border-[#F7C93E] focus:ring-2 focus:ring-[#FEF08A] transition-all font-medium cursor-pointer"
                   >
                     <option value="male">Male</option>
                     <option value="female">Female</option>

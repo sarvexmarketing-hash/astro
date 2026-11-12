@@ -68,7 +68,7 @@ export default function KundliPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] text-[#18181B] pb-24">
+    <div className="min-h-screen bg-white text-[#18181B] pb-24">
       <div className="max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-4 py-3 space-y-4">
         {/* Top App Bar (KundliScreen.kt lines 70-98) */}
         <div className="flex items-center justify-between py-2 border-b border-[#FDE68A]/60">
@@ -120,7 +120,7 @@ export default function KundliPage() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="Rahul Sharma"
-                  className="w-full px-4 py-2.5 bg-[#FFFDF7] border border-[#FDE68A] rounded-xl text-sm text-[#18181B] focus:outline-none focus:border-[#D97706]"
+                  className="w-full px-4 py-2.5 bg-[#FFFFFF] border border-[#FDE68A] rounded-xl text-sm text-[#18181B] focus:outline-none focus:border-[#D97706]"
                 />
               </div>
             </div>
@@ -137,7 +137,7 @@ export default function KundliPage() {
                     className={`py-2 rounded-xl text-xs font-bold border transition-all ${
                       selectedGender === g
                         ? "bg-[#FEF08A] border-[#F7C93E] text-[#78350F]"
-                        : "bg-[#FFFDF7] border-[#FDE68A] text-[#71717A] hover:bg-[#FFFBEB]"
+                        : "bg-[#FFFFFF] border-[#FDE68A] text-[#71717A] hover:bg-[#FFFBEB]"
                     }`}
                   >
                     {g}
@@ -155,7 +155,7 @@ export default function KundliPage() {
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-[#FFFDF7] border border-[#FDE68A] rounded-xl text-xs text-[#18181B] focus:outline-none focus:border-[#D97706]"
+                  className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#FDE68A] rounded-xl text-xs text-[#18181B] focus:outline-none focus:border-[#D97706]"
                 />
               </div>
               <div>
@@ -165,7 +165,7 @@ export default function KundliPage() {
                   value={birthTime}
                   onChange={(e) => setBirthTime(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-[#FFFDF7] border border-[#FDE68A] rounded-xl text-xs text-[#18181B] focus:outline-none focus:border-[#D97706]"
+                  className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#FDE68A] rounded-xl text-xs text-[#18181B] focus:outline-none focus:border-[#D97706]"
                 />
               </div>
             </div>
@@ -179,7 +179,7 @@ export default function KundliPage() {
                 onChange={(e) => setBirthPlace(e.target.value)}
                 required
                 placeholder="City, State, Country"
-                className="w-full px-4 py-2.5 bg-[#FFFDF7] border border-[#FDE68A] rounded-xl text-sm text-[#18181B] focus:outline-none focus:border-[#D97706]"
+                className="w-full px-4 py-2.5 bg-[#FFFFFF] border border-[#FDE68A] rounded-xl text-sm text-[#18181B] focus:outline-none focus:border-[#D97706]"
               />
             </div>
 
@@ -251,7 +251,7 @@ export default function KundliPage() {
                     </thead>
                     <tbody className="divide-y divide-[#FDE68A]/40 text-[#18181B]">
                       {samplePlanets.map((p) => (
-                        <tr key={p.name} className="hover:bg-[#FFFDF7]">
+                        <tr key={p.name} className="hover:bg-[#FFFFFF]">
                           <td className="py-2 px-3 font-bold">{p.name}</td>
                           <td className="py-2 px-3 text-[#71717A]">{p.rashi}</td>
                           <td className="py-2 px-3 font-mono text-[11px]">{p.degree}</td>
@@ -343,7 +343,7 @@ export default function KundliPage() {
                     </div>
                     <span className="font-bold text-[#D97706]">2018 - 2038</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#FFFDF7] border border-[#FDE68A] flex justify-between items-center">
+                  <div className="p-3 rounded-xl bg-[#FFFFFF] border border-[#FDE68A] flex justify-between items-center">
                     <div>
                       <span className="font-bold text-[#18181B]">Sun (Surya) Mahadasha</span>
                       <p className="text-[10px] text-[#71717A]">Upcoming</p>

@@ -244,7 +244,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-10 bg-[#FFFDF7]">
+    <div className="min-h-[85vh] flex items-center justify-center px-4 py-10 bg-white">
       {/* Invisible reCAPTCHA container for Firebase Phone Auth */}
       <div id="recaptcha-container"></div>
 

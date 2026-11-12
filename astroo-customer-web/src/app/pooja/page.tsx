@@ -92,7 +92,7 @@ export default function PoojaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] text-[#18181B] pb-24">
+    <div className="min-h-screen bg-white text-[#18181B] pb-24">
       <div className="max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-4 py-3 space-y-4">
         {/* Top App Bar (PoojaMarketplaceScreen.kt lines 53-86) */}
         <div className="flex items-center justify-between py-2 border-b border-[#FDE68A]/60">
@@ -246,7 +246,7 @@ export default function PoojaPage() {
                       value={gotra}
                       onChange={(e) => setGotra(e.target.value)}
                       placeholder="e.g., Kashyapa, Bharadwaj"
-                      className="w-full px-3 py-2 bg-[#FFFDF7] border border-[#FDE68A] rounded-xl focus:outline-none focus:border-[#D97706]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#FDE68A] rounded-xl focus:outline-none focus:border-[#D97706]"
                     />
                   </div>
 
@@ -257,7 +257,7 @@ export default function PoojaPage() {
                       value={sankalp}
                       onChange={(e) => setSankalp(e.target.value)}
                       placeholder="Prayers for family health, peace, career progress..."
-                      className="w-full px-3 py-2 bg-[#FFFDF7] border border-[#FDE68A] rounded-xl focus:outline-none focus:border-[#D97706] resize-none"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#FDE68A] rounded-xl focus:outline-none focus:border-[#D97706] resize-none"
                     />
                   </div>
 
@@ -268,7 +268,7 @@ export default function PoojaPage() {
                       value={preferredDate}
                       onChange={(e) => setPreferredDate(e.target.value)}
                       required
-                      className="w-full px-3 py-2 bg-[#FFFDF7] border border-[#FDE68A] rounded-xl focus:outline-none focus:border-[#D97706]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#FDE68A] rounded-xl focus:outline-none focus:border-[#D97706]"
                     />
                   </div>
 

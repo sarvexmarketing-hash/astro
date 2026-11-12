@@ -194,9 +194,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white text-[#18181B] relative">
-      {/* Radiant sunlit yellow shading at the top (HomeScreen.kt line 139-152) */}
-      <div className="absolute top-0 left-0 right-0 h-[520px] bg-gradient-to-b from-[#FFFBEB] via-[#FEF3C7]/45 to-white pointer-events-none z-0" />
-
       {/* Main Container: Mobile friendly + Full Laptop/Desktop Grid */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-28 space-y-6 sm:space-y-8">
         
@@ -335,7 +332,7 @@ export default function HomePage() {
         {/* ===================================================================== */}
         {/* 2. RECENT ACTIVITY TICKER (HomeScreen.kt line 932-953)               */}
         {/* ===================================================================== */}
-        <div className="p-3 rounded-2xl bg-[#FFFDF0] border border-[#FDE68A] flex items-center justify-between text-xs sm:text-sm font-semibold text-[#92400E] shadow-2xs">
+        <div className="p-3 rounded-2xl bg-white border border-[#FDE68A] flex items-center justify-between text-xs sm:text-sm font-semibold text-[#92400E] shadow-2xs">
           <div className="flex items-center gap-2">
             <span className="text-lg select-none">🛡️</span>
             <span>100% Private, Confidential & Verified Vedic Consultations</span>

@@ -313,9 +313,9 @@ function AstrologersListContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] text-[#18181B] pb-28">
+    <div className="min-h-screen bg-white text-[#18181B] pb-28">
       {/* ── Top Hero / Mode Banner ── */}
-      <section className="bg-gradient-to-b from-[#FEF9C3] via-[#FFFBEB] to-[#FFFDF7] border-b border-[#FDE68A]/60 pt-6 pb-6 px-4 sm:px-6">
+      <section className="bg-white border-b border-[#FDE68A]/60 pt-6 pb-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto space-y-4">
           {/* Header Title */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -783,7 +783,7 @@ export default function AstrologersPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FFFDF7] flex items-center justify-center">
+        <div className="min-h-screen bg-white flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
         </div>
       }

@@ -66,7 +66,7 @@ export default function Navbar() {
   return (
     <>
       {/* Responsive Header: Phone & Laptop compatible */}
-      <header className="sticky top-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b border-[#FDE68A]/60 shadow-xs">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#FDE68A]/60 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           {/* Left: Menu / Back + Logo + Title & Telugu Subtitle */}
           <div className="flex items-center gap-2 sm:gap-3">

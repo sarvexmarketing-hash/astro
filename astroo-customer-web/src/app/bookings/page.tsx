@@ -57,7 +57,7 @@ export default function BookingsAndHistoryPage() {
   }, [poojaBookings, selectedPoojaTab]);
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] text-[#18181B] pb-24">
+    <div className="min-h-screen bg-white text-[#18181B] pb-24">
       <div className="max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-4 py-3 space-y-4">
         {/* Top App Bar */}
         <div className="flex items-center justify-between py-2 border-b border-[#FDE68A]/60">

@@ -85,7 +85,7 @@ export default function AstrologerProfilePage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FFFDF7] flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
         <span className="text-xs text-[#71717A] mt-2">Loading profile...</span>
       </div>
@@ -93,7 +93,7 @@ export default function AstrologerProfilePage({
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] text-[#18181B] pb-28">
+    <div className="min-h-screen bg-white text-[#18181B] pb-28">
       <div className="max-w-md sm:max-w-xl mx-auto px-4 py-3 space-y-6">
         {/* Top App Bar (AstrologerProfileScreen.kt line 99) */}
         <div className="flex items-center justify-between py-2">

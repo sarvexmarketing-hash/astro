@@ -367,7 +367,7 @@ export default function ChatScreenPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FFFDF7] flex flex-col items-center justify-center space-y-3">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-3">
         <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
         <span className="text-sm font-semibold text-[#18181B]">
           Connecting with {astrologerName}...
@@ -386,7 +386,7 @@ export default function ChatScreenPage({
 
     if (isSelfError) {
       return (
-        <div className="min-h-screen bg-[#FFFDF7] flex flex-col items-center justify-center p-6 text-center space-y-4 max-w-md mx-auto">
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center space-y-4 max-w-md mx-auto">
           <div className="w-16 h-16 rounded-2xl bg-[#FEF9C3] border border-[#FDE68A] flex items-center justify-center text-3xl shadow-xs">
             👤
           </div>
@@ -411,7 +411,7 @@ export default function ChatScreenPage({
     }
 
     return (
-      <div className="min-h-screen bg-[#FFFDF7] flex flex-col items-center justify-center p-6 text-center space-y-4 max-w-sm mx-auto">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center space-y-4 max-w-sm mx-auto">
         <div className="w-16 h-16 rounded-2xl bg-amber-100 border border-[#FDE68A] flex items-center justify-center text-3xl">
           {isAuthError ? "🔐" : "⚠️"}
         </div>
@@ -444,7 +444,7 @@ export default function ChatScreenPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] text-[#18181B] flex flex-col">
+    <div className="min-h-screen bg-white text-[#18181B] flex flex-col">
       {/* ── Chat Header (ChatScreen.kt line 390) ── */}
       <header className="sticky top-0 z-30 bg-white border-b border-[#FDE68A] px-3 py-2.5 flex items-center justify-between shadow-2xs">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -621,7 +621,7 @@ export default function ChatScreenPage({
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 px-4 py-2.5 bg-[#FFFDF7] border border-[#FDE68A] focus:border-[#D97706] rounded-full text-xs sm:text-sm text-[#18181B] focus:outline-none transition-colors"
+            className="flex-1 px-4 py-2.5 bg-[#FFFFFF] border border-[#FDE68A] focus:border-[#D97706] rounded-full text-xs sm:text-sm text-[#18181B] focus:outline-none transition-colors"
           />
 
           <button

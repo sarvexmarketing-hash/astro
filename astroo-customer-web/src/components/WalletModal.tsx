@@ -143,7 +143,7 @@ export default function WalletModal({
                       className={`py-3 px-3 rounded-2xl border text-center transition-all cursor-pointer ${
                         isSelected
                           ? 'border-2 border-[#F7C93E] bg-[#FEF08A] shadow-xs text-[#78350F] font-bold scale-[1.02]'
-                          : 'border border-[#FDE68A] bg-[#FFFDF7] hover:bg-[#FFFBEB] hover:border-[#F7C93E] text-[#18181B] font-semibold'
+                          : 'border border-[#FDE68A] bg-[#FFFFFF] hover:bg-[#FFFBEB] hover:border-[#F7C93E] text-[#18181B] font-semibold'
                       }`}
                     >
                       <div className="font-bold text-base sm:text-lg">

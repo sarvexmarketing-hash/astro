@@ -54,7 +54,7 @@ export default function RootLayout({
         <link rel="icon" href="/images/app_logo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/images/app_logo.png" />
       </head>
-      <body className="bg-[#FFFDF7] text-[#18181B] min-h-screen flex flex-col antialiased selection:bg-[#F7C93E] selection:text-[#18181B]">
+      <body className="bg-white text-[#18181B] min-h-screen flex flex-col antialiased selection:bg-[#F7C93E] selection:text-[#18181B]">
         <AuthProvider>
           <SocketProvider>
             <Navbar />
