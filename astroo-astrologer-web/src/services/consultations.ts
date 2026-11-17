@@ -16,12 +16,27 @@ export const consultationsService = {
     return res.data;
   },
 
-  async end(id: string, durationSeconds?: number): Promise<{ data: Consultation; billing: any }> {
-    const res = await api.post(`/consultations/${id}/end`, {
-      durationSeconds,
-      idempotencyKey: `end_${id}_${Date.now()}`,
-    });
+  async end(
+    id: string,
+    durationSeconds?: number | { durationSeconds?: number; recordingUrl?: string; audioBase64?: string }
+  ): Promise<{ data: Consultation; billing: any }> {
+    const payload =
+      typeof durationSeconds === 'object'
+        ? { ...durationSeconds, idempotencyKey: `end_${id}_${Date.now()}` }
+        : { durationSeconds, idempotencyKey: `end_${id}_${Date.now()}` };
+    const res = await api.post(`/consultations/${id}/end`, payload);
     return res;
+  },
+
+  async saveRecording(
+    id: string,
+    data: { recordingUrl?: string; audioBase64?: string; durationSeconds?: number; callType?: string }
+  ): Promise<any> {
+    const res = await api.post(`/consultations/${id}/recording`, {
+      consultationId: id,
+      ...data,
+    });
+    return res.data;
   },
 
   async getById(id: string): Promise<Consultation> {
@@ -44,6 +59,7 @@ export const consultationsService = {
     recipientId?: string;
     content: string;
     messageType?: string;
+    id?: string;
   }): Promise<ChatMessage> {
     const res = await api.post('/chat/send', data);
     return res.data || res.message;

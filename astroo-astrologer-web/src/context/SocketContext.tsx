@@ -27,13 +27,25 @@ export interface IncomingCallData {
   timestamp: string;
 }
 
+export interface WaitingSeeker {
+  consultationId: string;
+  customerId: string;
+  customerName: string;
+  type: string;
+  waitingNotice?: string;
+  activeType?: string;
+  createdAt: string;
+}
+
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
   incomingRequest: IncomingConsultationRequest | null;
   incomingCall: IncomingCallData | null;
+  waitingSeekers: WaitingSeeker[];
   clearIncomingRequest: () => void;
   clearIncomingCall: () => void;
+  dismissWaitingSeeker: (consultationId: string) => void;
   joinConsultation: (consultationId: string) => void;
   leaveConsultation: (consultationId: string) => void;
   sendMessage: (data: any, callback?: (res: any) => void) => void;
@@ -50,8 +62,31 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [incomingRequest, setIncomingRequest] = useState<IncomingConsultationRequest | null>(null);
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(null);
+  const [waitingSeekers, setWaitingSeekers] = useState<WaitingSeeker[]>([]);
 
   const socketRef = useRef<Socket | null>(null);
+
+  const playWaitingChime = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const audioCtx = new AudioContextClass();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.6);
+    } catch {
+      // Audio context policy
+    }
+  };
 
   useEffect(() => {
     const token = getToken();
@@ -81,11 +116,50 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Realtime Incoming Consultation Request (from Customer)
     const handleIncomingRequest = (req: IncomingConsultationRequest) => {
+      // If currently engaged in active call or chat page, also add to waiting queue reminder
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (path.includes('/chat/') || path.includes('/call/')) {
+          setWaitingSeekers((prev) => {
+            if (prev.some((s) => s.consultationId === req.consultationId)) return prev;
+            return [...prev, {
+              consultationId: req.consultationId,
+              customerId: req.customerId || req.userId,
+              customerName: req.customerName,
+              type: req.type,
+              waitingNotice: `${req.customerName} is waiting for your ${req.type} session!`,
+              createdAt: req.createdAt,
+            }];
+          });
+          playWaitingChime();
+          return;
+        }
+      }
       setIncomingRequest(req);
     };
 
     socketInstance.on('consultation_requested', handleIncomingRequest);
     socketInstance.on('incoming_consultation', handleIncomingRequest);
+
+    // Explicit User Waiting Alert (when astrologer is already busy/in consultation)
+    const handleWaitingAlert = (seeker: WaitingSeeker) => {
+      setWaitingSeekers((prev) => {
+        if (prev.some((s) => s.consultationId === seeker.consultationId)) return prev;
+        return [...prev, seeker];
+      });
+      playWaitingChime();
+    };
+    socketInstance.on('user_waiting_alert', handleWaitingAlert);
+
+    // Clear waiting seeker when accepted or ended
+    const handleStateClear = (data: any) => {
+      const cId = data?.consultationId || data?.id;
+      if (cId) {
+        setWaitingSeekers((prev) => prev.filter((s) => s.consultationId !== cId));
+      }
+    };
+    socketInstance.on('consultation_ended', handleStateClear);
+    socketInstance.on('consultation_started', handleStateClear);
 
     // Realtime Incoming WebRTC Voice / Video Call
     const handleIncomingCall = (call: IncomingCallData) => {
@@ -112,6 +186,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   const clearIncomingRequest = () => setIncomingRequest(null);
   const clearIncomingCall = () => setIncomingCall(null);
+  const dismissWaitingSeeker = (consultationId: string) => {
+    setWaitingSeekers((prev) => prev.filter((s) => s.consultationId !== consultationId));
+  };
 
   const joinConsultation = (consultationId: string) => {
     if (socketRef.current && consultationId) {
@@ -158,8 +235,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         isConnected,
         incomingRequest,
         incomingCall,
+        waitingSeekers,
         clearIncomingRequest,
         clearIncomingCall,
+        dismissWaitingSeeker,
         joinConsultation,
         leaveConsultation,
         sendMessage,

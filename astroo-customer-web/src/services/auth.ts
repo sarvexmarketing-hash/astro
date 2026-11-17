@@ -37,7 +37,13 @@ export const authService = {
   async me(): Promise<User | null> {
     try {
       const res = await api.get('/auth/me');
-      return res.data || null;
+      const u = res.data;
+      if (!u) return null;
+      return {
+        ...u,
+        fullName: u.fullName || u.full_name || '',
+        avatarUrl: u.avatarUrl || u.avatar_url || '',
+      };
     } catch {
       return null;
     }

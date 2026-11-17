@@ -26,7 +26,11 @@ import {
   IndianRupee,
   Wallet,
   TrendingUp,
-  Users
+  Users,
+  Sparkles,
+  Phone,
+  MessageSquare,
+  Pencil
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -81,6 +85,11 @@ export interface AstrologerWithDetails {
   is_online: boolean
   is_active: boolean
   starting_price: number
+  chat_rate: number
+  call_rate: number
+  is_muhurat_eligible: boolean
+  is_chat_enabled: boolean
+  is_call_enabled: boolean
   verification_status: 'pending' | 'verified' | 'rejected' | 'suspended'
   created_at: string
   phone?: string | null
@@ -99,6 +108,97 @@ export default function AstrologersPage() {
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
   const [rejectionReason, setRejectionReason] = useState("")
   const [isRejecting, setIsRejecting] = useState(false)
+
+  // Admin Rate Setting, Channels & Muhurtham Eligibility States
+  const [adminChatRate, setAdminChatRate] = useState<number>(20)
+  const [adminCallRate, setAdminCallRate] = useState<number>(25)
+  const [adminMuhuratEligible, setAdminMuhuratEligible] = useState<boolean>(false)
+  const [adminChatEnabled, setAdminChatEnabled] = useState<boolean>(true)
+  const [adminCallEnabled, setAdminCallEnabled] = useState<boolean>(true)
+
+  const handleOpenReviewModal = (astrologer: AstrologerWithDetails) => {
+    setSelectedAstrologer(astrologer)
+    setAdminChatRate(Number(astrologer.chat_rate) || Number(astrologer.starting_price) || 20)
+    setAdminCallRate(Number(astrologer.call_rate) || 25)
+    setAdminMuhuratEligible(Boolean(astrologer.is_muhurat_eligible))
+    setAdminChatEnabled(astrologer.is_chat_enabled !== false)
+    setAdminCallEnabled(astrologer.is_call_enabled !== false)
+    setIsRejecting(false)
+    setRejectionReason("")
+    setIsReviewModalOpen(true)
+  }
+
+  // Quick Rate & Pricing Modal States
+  const [isQuickRateModalOpen, setIsQuickRateModalOpen] = useState(false)
+  const [quickRateAstrologer, setQuickRateAstrologer] = useState<AstrologerWithDetails | null>(null)
+  const [isSavingRates, setIsSavingRates] = useState(false)
+
+  const handleOpenQuickRateModal = (astrologer: AstrologerWithDetails) => {
+    setQuickRateAstrologer(astrologer)
+    setAdminChatRate(Number(astrologer.chat_rate) || Number(astrologer.starting_price) || 20)
+    setAdminCallRate(Number(astrologer.call_rate) || 25)
+    setAdminMuhuratEligible(Boolean(astrologer.is_muhurat_eligible))
+    setAdminChatEnabled(astrologer.is_chat_enabled !== false)
+    setAdminCallEnabled(astrologer.is_call_enabled !== false)
+    setIsQuickRateModalOpen(true)
+  }
+
+  const handleSaveQuickRates = async () => {
+    if (!quickRateAstrologer) return
+    try {
+      setIsSavingRates(true)
+      await api.put(`/admin/astrologers/${quickRateAstrologer.id}/verify`, {
+        isVerified: quickRateAstrologer.verification_status === 'verified',
+        status: quickRateAstrologer.verification_status === 'verified' ? 'approved' : quickRateAstrologer.verification_status,
+        chatRate: Number(adminChatRate) || 20,
+        callRate: Number(adminCallRate) || 25,
+        isMuhuratEligible: Boolean(adminMuhuratEligible),
+        isChatEnabled: Boolean(adminChatEnabled),
+        isCallEnabled: Boolean(adminCallEnabled),
+      })
+
+      const updatedChat = Number(adminChatRate) || 20
+      const updatedCall = Number(adminCallRate) || 25
+      const updatedMuhurat = Boolean(adminMuhuratEligible)
+      const updatedChatEnabled = Boolean(adminChatEnabled)
+      const updatedCallEnabled = Boolean(adminCallEnabled)
+
+      setAstrologers(prev =>
+        prev.map(a =>
+          a.id === quickRateAstrologer.id
+            ? {
+                ...a,
+                chat_rate: updatedChat,
+                starting_price: updatedChat,
+                call_rate: updatedCall,
+                is_muhurat_eligible: updatedMuhurat,
+                is_chat_enabled: updatedChatEnabled,
+                is_call_enabled: updatedCallEnabled,
+              }
+            : a
+        )
+      )
+
+      if (selectedAstrologer && selectedAstrologer.id === quickRateAstrologer.id) {
+        setSelectedAstrologer(prev => prev ? ({
+          ...prev,
+          chat_rate: updatedChat,
+          starting_price: updatedChat,
+          call_rate: updatedCall,
+          is_muhurat_eligible: updatedMuhurat,
+          is_chat_enabled: updatedChatEnabled,
+          is_call_enabled: updatedCallEnabled,
+        }) : null)
+      }
+
+      toast.success(`Pricing and channels updated for ${quickRateAstrologer.display_name}`)
+      setIsQuickRateModalOpen(false)
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update rates")
+    } finally {
+      setIsSavingRates(false)
+    }
+  }
 
   // Payout Done Modal States
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false)
@@ -183,7 +283,12 @@ export default function AstrologersPage() {
             languages: langs,
             specializations: specs,
             skills: specs,
-            starting_price: Number(p.per_minute_rate) || 0,
+            starting_price: Number(p.chat_rate) || Number(p.per_minute_rate) || 20,
+            chat_rate: Number(p.chat_rate) || Number(p.per_minute_rate) || 20,
+            call_rate: Number(p.call_rate) || Number(p.call_per_minute_rate) || 25,
+            is_muhurat_eligible: Boolean(p.is_muhurat_eligible),
+            is_chat_enabled: p.is_chat_enabled !== false,
+            is_call_enabled: p.is_call_enabled !== false,
             rating: Number(p.rating) || 5.0,
             total_reviews: p.total_reviews || 0,
             total_consultations: Number(p.total_consultations) || (totalEarnings > 0 ? 1 : 0),
@@ -247,7 +352,18 @@ export default function AstrologersPage() {
         isVerified: newStatus === 'verified',
         status: newStatus === 'verified' ? 'approved' : newStatus,
         reason,
+        chatRate: Number(adminChatRate) || 20,
+        callRate: Number(adminCallRate) || 25,
+        isMuhuratEligible: Boolean(adminMuhuratEligible),
+        isChatEnabled: Boolean(adminChatEnabled),
+        isCallEnabled: Boolean(adminCallEnabled),
       })
+
+      const updatedChat = Number(adminChatRate) || 20
+      const updatedCall = Number(adminCallRate) || 25
+      const updatedMuhurat = Boolean(adminMuhuratEligible)
+      const updatedChatEnabled = Boolean(adminChatEnabled)
+      const updatedCallEnabled = Boolean(adminCallEnabled)
 
       setAstrologers(prev =>
         prev.map(a =>
@@ -257,6 +373,12 @@ export default function AstrologersPage() {
                 verification_status: newStatus,
                 is_active: newStatus === 'verified',
                 is_online: newStatus === 'verified',
+                chat_rate: updatedChat,
+                starting_price: updatedChat,
+                call_rate: updatedCall,
+                is_muhurat_eligible: updatedMuhurat,
+                is_chat_enabled: updatedChatEnabled,
+                is_call_enabled: updatedCallEnabled,
                 documents: a.documents.map(d => ({
                   ...d,
                   status: newStatus === 'verified' ? 'verified' : d.status
@@ -271,6 +393,12 @@ export default function AstrologersPage() {
           ...selectedAstrologer,
           verification_status: newStatus,
           is_active: newStatus === 'verified',
+          chat_rate: updatedChat,
+          starting_price: updatedChat,
+          call_rate: updatedCall,
+          is_muhurat_eligible: updatedMuhurat,
+          is_chat_enabled: updatedChatEnabled,
+          is_call_enabled: updatedCallEnabled,
           documents: selectedAstrologer.documents.map(d => ({
             ...d,
             status: newStatus === 'verified' ? 'verified' : d.status
@@ -486,7 +614,7 @@ export default function AstrologersPage() {
             <TableRow>
               <TableHead>Astrologer / Pandit</TableHead>
               <TableHead>Experience & Specializations</TableHead>
-              <TableHead className="text-right">Price</TableHead>
+              <TableHead className="text-right">Rates & Muhuratham</TableHead>
               <TableHead className="text-right">Completed</TableHead>
               <TableHead className="text-right">Earnings</TableHead>
               <TableHead className="text-center">KYC Documents</TableHead>
@@ -544,9 +672,36 @@ export default function AstrologersPage() {
                     </div>
                   </TableCell>
 
-                  <TableCell className="text-right font-medium">
-                    <div>₹{astrologer.starting_price}/min</div>
-                    <div className="text-[11px] text-muted-foreground">Starting Rate</div>
+                  <TableCell
+                    className="text-right font-medium text-xs cursor-pointer hover:bg-amber-50/70 transition-colors group relative"
+                    onClick={() => handleOpenQuickRateModal(astrologer)}
+                    title="Click to edit Chat, Call rates & Muhurtham eligibility"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span className="font-bold text-foreground">Chat: ₹{astrologer.chat_rate || astrologer.starting_price}/min</span>
+                      <Pencil className="h-3 w-3 text-amber-600 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="text-muted-foreground font-medium">Call: ₹{astrologer.call_rate || 25}/min</div>
+                    <div className="flex items-center justify-end gap-1 mt-1 flex-wrap">
+                      {!astrologer.is_chat_enabled && astrologer.is_call_enabled ? (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-900 border border-blue-300 font-bold">
+                          📞 Call Only
+                        </span>
+                      ) : astrologer.is_chat_enabled && !astrologer.is_call_enabled ? (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-900 border border-purple-300 font-bold">
+                          💬 Chat Only
+                        </span>
+                      ) : null}
+                      {astrologer.is_muhurat_eligible ? (
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                          ✨ Muhurtham
+                        </span>
+                      ) : (
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] bg-zinc-100 text-zinc-500">
+                          No Muhurtham
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
 
                   <TableCell className="text-right font-medium">
@@ -614,10 +769,7 @@ export default function AstrologersPage() {
                         size="sm"
                         variant={astrologer.verification_status === 'pending' ? "default" : "outline"}
                         className={astrologer.verification_status === 'pending' ? "bg-amber-500 hover:bg-amber-600 text-black font-semibold h-8 text-xs" : "h-8 text-xs"}
-                        onClick={() => {
-                          setSelectedAstrologer(astrologer)
-                          setIsReviewModalOpen(true)
-                        }}
+                        onClick={() => handleOpenReviewModal(astrologer)}
                       >
                         <Eye className="h-3.5 w-3.5 mr-1" />
                         {astrologer.verification_status === 'pending' ? "Verify" : "Review"}
@@ -630,6 +782,12 @@ export default function AstrologersPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem
+                            className="text-amber-800 font-medium focus:text-amber-900 focus:bg-amber-50 cursor-pointer"
+                            onClick={() => handleOpenQuickRateModal(astrologer)}
+                          >
+                            <IndianRupee className="mr-2 h-4 w-4 text-amber-600" /> Edit Rates & Muhurtham
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             className="text-emerald-700 font-medium focus:text-emerald-800 focus:bg-emerald-50 cursor-pointer"
                             onClick={() => handleOpenPayoutModal(astrologer)}
                           >
@@ -639,18 +797,17 @@ export default function AstrologersPage() {
                           {astrologer.verification_status !== 'verified' && (
                             <DropdownMenuItem
                               className="text-emerald-600 font-medium focus:text-emerald-600"
-                              onClick={() => updateVerificationStatus(astrologer.id, 'verified')}
+                              onClick={() => handleOpenReviewModal(astrologer)}
                             >
-                              <CheckCircle2 className="mr-2 h-4 w-4" /> Approve Astrologer
+                              <CheckCircle2 className="mr-2 h-4 w-4" /> Approve & Set Rates
                             </DropdownMenuItem>
                           )}
                           {astrologer.verification_status !== 'rejected' && (
                             <DropdownMenuItem
                               className="text-rose-600 focus:text-rose-600"
                               onClick={() => {
-                                setSelectedAstrologer(astrologer)
+                                handleOpenReviewModal(astrologer)
                                 setIsRejecting(true)
-                                setIsReviewModalOpen(true)
                               }}
                             >
                               <XCircle className="mr-2 h-4 w-4" /> Reject Verification
@@ -812,6 +969,136 @@ export default function AstrologersPage() {
                 </div>
               )}
 
+              {/* Admin Price Points & Muhurtham Authorization */}
+              <div className="p-4 bg-amber-50/70 border-2 border-amber-300 rounded-xl space-y-3.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-700" />
+                    <h4 className="font-bold text-sm text-amber-950">
+                      Admin Price Points & Muhurtham Authorization
+                    </h4>
+                  </div>
+                  <Badge className="bg-amber-200/90 text-amber-900 border border-amber-300 text-[11px] font-semibold">
+                    Admin Managed
+                  </Badge>
+                </div>
+                <p className="text-xs text-amber-900/80 leading-relaxed">
+                  Set the live chat and calling price points (₹/minute) for seekers, and specify whether this astrologer is certified to compute and accept auspicious Vedic Muhurtham consultations.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1.5 bg-white p-3 rounded-lg border border-amber-200 shadow-2xs">
+                    <label className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
+                      <MessageSquare className="h-3.5 w-3.5 text-amber-600" />
+                      Chat Price Point (₹ / min)
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-sm font-semibold text-zinc-400">₹</span>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={adminChatRate}
+                        onChange={(e) => setAdminChatRate(Number(e.target.value))}
+                        className="pl-7 bg-white text-sm font-bold text-zinc-900 border-zinc-200 focus:border-amber-500"
+                        placeholder="20"
+                      />
+                    </div>
+                    <p className="text-[11px] text-zinc-500">Rate deducted from seeker per minute of live chat.</p>
+                  </div>
+
+                  <div className="space-y-1.5 bg-white p-3 rounded-lg border border-amber-200 shadow-2xs">
+                    <label className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5 text-amber-600" />
+                      Call Price Point (₹ / min)
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-sm font-semibold text-zinc-400">₹</span>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={adminCallRate}
+                        onChange={(e) => setAdminCallRate(Number(e.target.value))}
+                        className="pl-7 bg-white text-sm font-bold text-zinc-900 border-zinc-200 focus:border-amber-500"
+                        placeholder="25"
+                      />
+                    </div>
+                    <p className="text-[11px] text-zinc-500">Rate deducted from seeker per minute of audio/video call.</p>
+                  </div>
+                </div>
+
+                {/* Active Consultation Channels Selection */}
+                <div className="p-3 bg-white rounded-lg border border-amber-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-800">
+                      Active Consultation Channels
+                    </label>
+                    {!adminChatEnabled && adminCallEnabled ? (
+                      <Badge className="bg-blue-100 text-blue-900 border-blue-300 text-[10px]">📞 Call Only Mode</Badge>
+                    ) : adminChatEnabled && !adminCallEnabled ? (
+                      <Badge className="bg-purple-100 text-purple-900 border-purple-300 text-[10px]">💬 Chat Only Mode</Badge>
+                    ) : (
+                      <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px]">Chat & Call Active</Badge>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <label className={`p-2.5 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${adminChatEnabled ? 'bg-amber-50/80 border-amber-300' : 'bg-zinc-50 border-zinc-200 opacity-60'}`}>
+                      <input
+                        type="checkbox"
+                        checked={adminChatEnabled}
+                        onChange={(e) => setAdminChatEnabled(e.target.checked)}
+                        className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                      />
+                      <div>
+                        <span className="font-bold block text-zinc-900">Chat Enabled</span>
+                        <span className="text-[10px] text-zinc-500">Allow live chat</span>
+                      </div>
+                    </label>
+
+                    <label className={`p-2.5 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${adminCallEnabled ? 'bg-amber-50/80 border-amber-300' : 'bg-zinc-50 border-zinc-200 opacity-60'}`}>
+                      <input
+                        type="checkbox"
+                        checked={adminCallEnabled}
+                        onChange={(e) => setAdminCallEnabled(e.target.checked)}
+                        className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                      />
+                      <div>
+                        <span className="font-bold block text-zinc-900">Call Enabled</span>
+                        <span className="text-[10px] text-zinc-500">Allow voice & video</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Muhurtham Authorization Toggle */}
+                <div className={`p-3 rounded-lg border transition-all ${adminMuhuratEligible ? 'bg-amber-100/70 border-amber-400' : 'bg-white border-zinc-200'}`}>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={adminMuhuratEligible}
+                      onChange={(e) => setAdminMuhuratEligible(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-zinc-900">
+                          Eligible for Auspicious Muhurtham Consultations
+                        </span>
+                        {adminMuhuratEligible ? (
+                          <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4">Muhurtham Verified</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-zinc-500 text-[10px] px-1.5 py-0 h-4">Excluded from Muhurtham</Badge>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-zinc-600 leading-normal">
+                        When enabled, this astrologer will appear under <strong>Book Muhurtham</strong> for Vivah, Griha Pravesh, and Namkaran calculations. Astrologers without this privilege are filtered out from Muhurtham discovery.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* Uploaded Documents */}
               <div className="space-y-2">
                 <h4 className="text-sm font-bold flex items-center gap-1.5">
@@ -892,13 +1179,23 @@ export default function AstrologersPage() {
                         <XCircle className="h-4 w-4 mr-1.5" />
                         Reject
                       </Button>
-                      <Button
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                        onClick={() => updateVerificationStatus(selectedAstrologer.id, 'verified')}
-                      >
-                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                        Approve & Verify
-                      </Button>
+                      {selectedAstrologer.verification_status === 'verified' ? (
+                        <Button
+                          className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                          onClick={() => updateVerificationStatus(selectedAstrologer.id, 'verified')}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                          Save Rates & Muhurtham Settings
+                        </Button>
+                      ) : (
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                          onClick={() => updateVerificationStatus(selectedAstrologer.id, 'verified')}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                          Approve & Set Rates
+                        </Button>
+                      )}
                     </>
                   ) : (
                     <Button
@@ -1072,6 +1369,182 @@ export default function AstrologersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Quick Rate & Muhurtham Edit Dialog */}
+      {quickRateAstrologer && (
+        <Dialog open={isQuickRateModalOpen} onOpenChange={setIsQuickRateModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg flex items-center gap-2">
+                <IndianRupee className="h-5 w-5 text-amber-600" />
+                <span>Edit Astrologer Pricing & Muhurtham</span>
+              </DialogTitle>
+              <DialogDescription>
+                Update live consultation price points and Muhurtham eligibility for{" "}
+                <span className="font-semibold text-foreground">{quickRateAstrologer.display_name}</span>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50/60 border border-amber-200">
+                <Avatar className="h-10 w-10 border border-amber-300">
+                  {quickRateAstrologer.profile_image_url ? (
+                    <AvatarImage src={quickRateAstrologer.profile_image_url} alt={quickRateAstrologer.display_name} />
+                  ) : null}
+                  <AvatarFallback className="bg-amber-200 text-amber-900 font-bold">
+                    {quickRateAstrologer.display_name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-bold text-sm text-amber-950">{quickRateAstrologer.display_name}</div>
+                  <div className="text-xs text-amber-800">
+                    {quickRateAstrologer.phone || "Verified Contact"} • {quickRateAstrologer.verification_status.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
+                    <MessageSquare className="h-3.5 w-3.5 text-amber-600" />
+                    Chat Rate (₹ / min)
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-sm font-semibold text-zinc-400">₹</span>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={adminChatRate}
+                      onChange={(e) => setAdminChatRate(Number(e.target.value))}
+                      className="pl-7 text-sm font-bold bg-white"
+                      placeholder="20"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Live chat consultation</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-amber-600" />
+                    Call Rate (₹ / min)
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-sm font-semibold text-zinc-400">₹</span>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={adminCallRate}
+                      onChange={(e) => setAdminCallRate(Number(e.target.value))}
+                      className="pl-7 text-sm font-bold bg-white"
+                      placeholder="25"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Voice / video call</p>
+                </div>
+              </div>
+
+              {/* Channels Allowed Selection */}
+              <div className="p-3 bg-white rounded-lg border border-amber-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-zinc-800">
+                    Active Consultation Channels
+                  </label>
+                  {!adminChatEnabled && adminCallEnabled ? (
+                    <Badge className="bg-blue-100 text-blue-900 border-blue-300 text-[10px]">📞 Call Only Mode</Badge>
+                  ) : adminChatEnabled && !adminCallEnabled ? (
+                    <Badge className="bg-purple-100 text-purple-900 border-purple-300 text-[10px]">💬 Chat Only Mode</Badge>
+                  ) : (
+                    <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px]">Chat & Call Active</Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${adminChatEnabled ? 'bg-amber-50 border-amber-300' : 'bg-zinc-50 border-zinc-200 opacity-60'}`}>
+                    <input
+                      type="checkbox"
+                      checked={adminChatEnabled}
+                      onChange={(e) => setAdminChatEnabled(e.target.checked)}
+                      className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold block text-zinc-900">Chat Enabled</span>
+                      <span className="text-[10px] text-zinc-500">Allow text chats</span>
+                    </div>
+                  </label>
+
+                  <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${adminCallEnabled ? 'bg-amber-50 border-amber-300' : 'bg-zinc-50 border-zinc-200 opacity-60'}`}>
+                    <input
+                      type="checkbox"
+                      checked={adminCallEnabled}
+                      onChange={(e) => setAdminCallEnabled(e.target.checked)}
+                      className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold block text-zinc-900">Call Enabled</span>
+                      <span className="text-[10px] text-zinc-500">Allow voice/video</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Muhurtham Switch */}
+              <div className={`p-3 rounded-lg border transition-all ${adminMuhuratEligible ? 'bg-amber-100/70 border-amber-400' : 'bg-muted/40 border-border'}`}>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={adminMuhuratEligible}
+                    onChange={(e) => setAdminMuhuratEligible(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-zinc-900">
+                        Eligible for Auspicious Muhurtham
+                      </span>
+                      {adminMuhuratEligible ? (
+                        <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4">Enabled</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-zinc-500 text-[10px] px-1.5 py-0 h-4">Disabled</Badge>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-600 leading-normal">
+                      Appears in <strong>Book Muhurtham</strong> for Vivah, Griha Pravesh, and Namkaran calculations.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setIsQuickRateModalOpen(false)}
+                disabled={isSavingRates}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                onClick={handleSaveQuickRates}
+                disabled={isSavingRates}
+              >
+                {isSavingRates ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                    Save Pricing Changes
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

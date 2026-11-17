@@ -7,6 +7,11 @@ const DEFAULT_SOCKET_URL = process.env.NODE_ENV === 'production'
   : 'http://localhost:5001';
 
 export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return '/api';
+    }
+  }
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
@@ -18,9 +23,12 @@ export function getApiBaseUrl(): string {
 
 export function getSocketBaseUrl(): string {
   if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5001';
+    }
     return process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin.replace(':3001', ':5001');
   }
-  return process.env.NEXT_PUBLIC_SOCKET_URL || DEFAULT_SOCKET_URL;
+  return process.env.NODE_ENV !== 'production' ? 'http://localhost:5001' : (process.env.NEXT_PUBLIC_SOCKET_URL || DEFAULT_SOCKET_URL);
 }
 
 export function getRazorpayKey(): string {

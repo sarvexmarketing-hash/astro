@@ -103,7 +103,29 @@ export default function ChatScreenPage({
       // 3. Load Chat History if exists
       if (cons.id) {
         const history = await consultationsService.getMessages(cons.id);
-        const mapped: LocalChatMessage[] = (history || []).map((m: any) => {
+        const deduplicatedRaw: any[] = [];
+        for (const m of history || []) {
+          const mAny = m as any;
+          const isDup = deduplicatedRaw.some((existing) => {
+            const exAny = existing as any;
+            if (existing.id && m.id && existing.id === m.id) return true;
+            if (exAny._id && mAny._id && exAny._id === mAny._id) return true;
+            if (
+              (existing.senderId || exAny.sender_id) === (m.senderId || mAny.sender_id) &&
+              (existing.content || existing.text) === (m.content || m.text)
+            ) {
+              const diff = Math.abs(
+                new Date(existing.createdAt || exAny.created_at || Date.now()).getTime() -
+                new Date(m.createdAt || mAny.created_at || Date.now()).getTime()
+              );
+              if (diff < 3000) return true;
+            }
+            return false;
+          });
+          if (!isDup) deduplicatedRaw.push(m);
+        }
+
+        const mapped: LocalChatMessage[] = deduplicatedRaw.map((m: any) => {
           const senderId = m.senderId || m.sender_id || m.sender;
           const isAstrologerSender =
             (cons?.astrologer_id && senderId === cons.astrologer_id) ||
@@ -143,7 +165,11 @@ export default function ChatScreenPage({
   useEffect(() => {
     if (!socket || !consultation?.id) return;
 
-    socket.emit("join_consultation", { consultationId: consultation.id });
+    const joinRoom = () => {
+      socket.emit("join_consultation", { consultationId: consultation.id });
+    };
+    joinRoom();
+    socket.on("connect", joinRoom);
 
     const handleNewMessage = (payload: any) => {
       if (payload.text?.startsWith("STATUS:") || payload.sender === "system") {
@@ -180,21 +206,56 @@ export default function ChatScreenPage({
           payload.sender === "customer"
         );
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: payload.id || `msg_${Date.now()}`,
-          text: payload.text || payload.content || "",
-          isFromUser: isFromMe,
-          timestamp: payload.timestamp || new Date().toISOString(),
-          status: "SENT",
-        },
-      ]);
+      setMessages((prev) => {
+        const payloadId = payload.id || payload._id;
+        if (payloadId && prev.some((m) => m.id === payloadId)) {
+          return prev;
+        }
+        if (isFromMe) {
+          const optIndex = prev.findIndex(
+            (m) =>
+              (m.status === "SENDING" || m.id === payloadId || m.id?.startsWith("client_")) &&
+              m.text === (payload.text || payload.content)
+          );
+          if (optIndex !== -1) {
+            const next = [...prev];
+            next[optIndex] = {
+              ...next[optIndex],
+              id: payloadId || next[optIndex].id,
+              status: "SENT",
+              timestamp: payload.timestamp || payload.createdAt || next[optIndex].timestamp,
+            };
+            return next;
+          }
+        }
+
+        // Deduplicate against recent message from same participant
+        const isDup = prev.some((m) => {
+          if ((m.isFromUser === isFromMe) && (m.text?.trim() === (payload.text || payload.content)?.trim())) {
+            const diff = Math.abs(
+              new Date(m.timestamp || Date.now()).getTime() -
+              new Date(payload.timestamp || payload.createdAt || Date.now()).getTime()
+            );
+            if (diff < 4000) return true;
+          }
+          return false;
+        });
+        if (isDup) return prev;
+
+        return [
+          ...prev,
+          {
+            id: payloadId || `msg_${Date.now()}`,
+            text: payload.text || payload.content || "",
+            isFromUser: isFromMe,
+            timestamp: payload.timestamp || payload.createdAt || new Date().toISOString(),
+            status: "SENT",
+          },
+        ];
+      });
     };
 
     socket.on("chat_message", handleNewMessage);
-    socket.on("new_message", handleNewMessage);
-    socket.on("receive_message", handleNewMessage);
     socket.on("consultation_ended", () => {
       router.push("/astrologers");
     });
@@ -283,14 +344,13 @@ export default function ChatScreenPage({
 
     return () => {
       socket.off("chat_message", handleNewMessage);
-      socket.off("new_message", handleNewMessage);
-      socket.off("receive_message", handleNewMessage);
       socket.off("astrologer_joined", handleAstrologerJoined);
       socket.off("user_joined_room", handleUserJoinedRoom);
       socket.off("consultation_status", handleConsultationStatus);
       socket.off("consultation_started", handleConsultationStarted);
       socket.off("astrologer_presence_changed", handlePresenceChanged);
       socket.off("consultation_tick", handleConsultationTick);
+      socket.off("connect", joinRoom);
     };
   }, [socket, consultation?.id, astrologerId, astrologerName]);
 
@@ -314,8 +374,8 @@ export default function ChatScreenPage({
     setMessages((prev) => [...prev, newMsg]);
     setMessageText("");
 
-    // 1. Instant Socket.IO emission to room and astrologer
-    if (socket) {
+    // 1. Instant Socket.IO emission to room and astrologer if connected
+    if (socket && isConnected) {
       socket.emit("send_message", {
         consultationId: consultation.id,
         recipientId: astrologerId,
@@ -323,25 +383,24 @@ export default function ChatScreenPage({
         messageType: "text",
         id: msgId,
       });
-    }
-
-    // 2. HTTP persistence
-    try {
-      await consultationsService.sendMessage({
-        consultationId: consultation.id,
-        recipientId: astrologerId,
-        content: trimmed,
-      });
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msgId ? { ...m, status: "SENT" } : m))
-      );
-    } catch {
-      // If socket is connected, keep message as SENT
-      if (isConnected) {
+      setTimeout(() => {
         setMessages((prev) =>
           prev.map((m) => (m.id === msgId ? { ...m, status: "SENT" } : m))
         );
-      } else {
+      }, 300);
+    } else {
+      // 2. HTTP persistence fallback only if socket is offline
+      try {
+        await consultationsService.sendMessage({
+          consultationId: consultation.id,
+          recipientId: astrologerId,
+          content: trimmed,
+          id: msgId,
+        });
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msgId ? { ...m, status: "SENT" } : m))
+        );
+      } catch {
         setMessages((prev) =>
           prev.map((m) => (m.id === msgId ? { ...m, status: "FAILED" } : m))
         );

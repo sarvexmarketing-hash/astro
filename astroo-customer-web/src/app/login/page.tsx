@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import {
-  signInWithGoogleFirebaseWeb,
   setupRecaptcha,
   sendPhoneOtpFirebaseWeb,
 } from '../../lib/firebase';
@@ -47,6 +46,10 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   );
 }
 
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  '802385001901-6gksjs13opqpggp13841rqe33340psp2.apps.googleusercontent.com';
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,8 +78,129 @@ function LoginContent() {
 
   // Recaptcha verifier ref
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const [gisLoaded, setGisLoaded] = useState(false);
+
+  // Ensure GIS script is loaded
+  const loadGisScript = (): Promise<any> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') return resolve(null);
+      const gAccounts = (window as any).google?.accounts;
+      if (gAccounts) return resolve(gAccounts);
+
+      const existing = document.getElementById('google-gsi-client');
+      if (existing) {
+        if ((window as any).google?.accounts) {
+          return resolve((window as any).google.accounts);
+        }
+        let done = false;
+        const timer = setTimeout(() => {
+          if (!done) {
+            done = true;
+            resolve((window as any).google?.accounts || null);
+          }
+        }, 2000);
+
+        existing.addEventListener('load', () => {
+          if (!done) {
+            done = true;
+            clearTimeout(timer);
+            resolve((window as any).google?.accounts || null);
+          }
+        });
+        existing.addEventListener('error', () => {
+          if (!done) {
+            done = true;
+            clearTimeout(timer);
+            resolve(null);
+          }
+        });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.id = 'google-gsi-client';
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+
+      let done = false;
+      const timer = setTimeout(() => {
+        if (!done) {
+          done = true;
+          resolve((window as any).google?.accounts || null);
+        }
+      }, 3000);
+
+      script.onload = () => {
+        if (!done) {
+          done = true;
+          clearTimeout(timer);
+          resolve((window as any).google?.accounts || null);
+        }
+      };
+      script.onerror = () => {
+        if (!done) {
+          done = true;
+          clearTimeout(timer);
+          resolve(null);
+        }
+      };
+      document.body.appendChild(script);
+    });
+  };
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const renderGoogleButton = (gAccounts: any) => {
+      if (!gAccounts?.id) return;
+
+      try {
+        gAccounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          cancel_on_tap_outside: true,
+          callback: async (response: any) => {
+            if (response?.credential) {
+              try {
+                setIsGoogleLoading(true);
+                setError(null);
+                await googleAuth(response.credential);
+                setSuccessMessage('Successfully signed in with Google!');
+                setTimeout(() => {
+                  router.push(redirectUrl);
+                }, 500);
+              } catch (err: any) {
+                setError(err.message || 'Google authentication failed.');
+              } finally {
+                setIsGoogleLoading(false);
+              }
+            }
+          },
+        });
+
+        const slot = document.getElementById('google-btn-slot');
+        if (slot) {
+          slot.innerHTML = '';
+          gAccounts.id.renderButton(slot, {
+            theme: 'outline',
+            size: 'large',
+            width: 380,
+            text: 'continue_with',
+            shape: 'pill',
+          });
+          setGisLoaded(true);
+        }
+      } catch (e) {
+        console.warn('GIS initialize error:', e);
+      }
+    };
+
+    loadGisScript().then((gAccounts) => {
+      if (gAccounts) {
+        renderGoogleButton(gAccounts);
+      }
+    });
+
     return () => {
       if (recaptchaVerifierRef.current) {
         try {
@@ -84,40 +208,63 @@ function LoginContent() {
         } catch {}
       }
     };
-  }, []);
+  }, [googleAuth, redirectUrl, router]);
 
-  // ── Handle Sign In with Google via Firebase ────────────────────────
+  // ── Handle Sign In with Google (Zero Redirect URIs, Zero API Keys) ──
   const handleGoogleSignIn = async () => {
     setError(null);
     setIsGoogleLoading(true);
 
     try {
-      // 1. Trigger Firebase Google Popup
-      const { idToken } = await signInWithGoogleFirebaseWeb();
+      const gAccounts = await loadGisScript();
 
-      if (!idToken) {
-        throw new Error('No ID token received from Google authentication.');
+      // 1. GIS Token Client (official popup flow without redirect_uri mismatch)
+      if (gAccounts?.oauth2) {
+        const tokenClient = gAccounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'email profile openid',
+          callback: async (tokenRes: any) => {
+            setIsGoogleLoading(false);
+            if (tokenRes?.access_token) {
+              try {
+                await googleAuth(tokenRes.access_token);
+                setSuccessMessage('Successfully signed in with Google!');
+                setTimeout(() => router.push(redirectUrl), 500);
+              } catch (err: any) {
+                setError(err.message || 'Google authentication failed.');
+              }
+            } else if (tokenRes?.error) {
+              if (tokenRes.error !== 'popup_closed_by_user') {
+                setError(tokenRes.error_description || 'Google sign-in error.');
+              }
+            }
+          },
+          error_callback: (err: any) => {
+            console.warn('GIS error_callback:', err);
+            setIsGoogleLoading(false);
+            setError('Google sign-in popup could not open. Please allow popups or use Email & Password.');
+          },
+        });
+        tokenClient.requestAccessToken();
+        return;
       }
 
-      // 2. Synchronize with AstroWave backend via Firebase Auth API
-      await firebaseAuth(idToken);
-
-      setSuccessMessage('Successfully signed in with Google!');
-      setTimeout(() => {
-        router.push(redirectUrl);
-      }, 500);
-    } catch (err: any) {
-      console.error('Google Sign-in error:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('Google sign-in popup was closed. Please try again.');
-      } else if (err.code === 'auth/cancelled-popup-request') {
-        // Ignored duplicate popup
-      } else {
-        setError(err.message || 'Google sign-in failed. Please try again.');
+      // 2. GIS One Tap prompt fallback
+      if (gAccounts?.id) {
+        gAccounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setIsGoogleLoading(false);
+            setError('Google Sign-In prompt was dismissed. Please use Email & Password or Phone OTP.');
+          }
+        });
+        return;
       }
-    } finally {
-      setIsGoogleLoading(false);
+    } catch (tokenErr: any) {
+      console.warn('GIS TokenClient error:', tokenErr);
     }
+
+    setError('Could not connect to Google Sign-In. Please use Phone OTP or Email & Password.');
+    setIsGoogleLoading(false);
   };
 
   // ── Handle Firebase Phone OTP Sending ──────────────────────────────
@@ -144,11 +291,13 @@ function LoginContent() {
         }
         recaptchaVerifierRef.current = setupRecaptcha('recaptcha-container');
 
-        const confirmation = await sendPhoneOtpFirebaseWeb(
-          cleanPhone,
-          recaptchaVerifierRef.current
-        );
-        setConfirmationResult(confirmation);
+        if (recaptchaVerifierRef.current) {
+          const confirmation = await sendPhoneOtpFirebaseWeb(
+            cleanPhone,
+            recaptchaVerifierRef.current
+          );
+          setConfirmationResult(confirmation);
+        }
         setIsOtpSent(true);
         setSuccessMessage(`OTP sent to +91 ${cleanPhone}`);
       } catch (firebaseErr: any) {
@@ -277,21 +426,27 @@ function LoginContent() {
           </div>
         )}
 
-        {/* ── GOOGLE SIGN-IN BUTTON (Firebase Auth) ── */}
-        <div>
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={isGoogleLoading || isLoading}
-            className="w-full py-3.5 px-4 rounded-2xl border-2 border-zinc-200 hover:border-[#F7C93E] bg-white hover:bg-[#FFFBEB] text-[#18181B] font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
-          >
-            {isGoogleLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-[#D97706]" />
-            ) : (
-              <GoogleIcon className="h-5 w-5" />
-            )}
-            <span>Continue with Google</span>
-          </button>
+        {/* ── GOOGLE SIGN-IN BUTTON (GIS Google Identity Services) ── */}
+        <div className="space-y-2">
+          <div
+            id="google-btn-slot"
+            className="w-full flex justify-center [&>div]:!w-full [&>div>iframe]:!w-full"
+          ></div>
+          {!gisLoaded && (
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading || isLoading}
+              className="w-full py-3.5 px-4 rounded-2xl border-2 border-zinc-200 hover:border-[#F7C93E] bg-white hover:bg-[#FFFBEB] text-[#18181B] font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+            >
+              {isGoogleLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-[#D97706]" />
+              ) : (
+                <GoogleIcon className="h-5 w-5" />
+              )}
+              <span>Continue with Google</span>
+            </button>
+          )}
         </div>
 
         {/* Divider */}

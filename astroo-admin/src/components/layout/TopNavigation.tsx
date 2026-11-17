@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -15,6 +15,9 @@ import {
   Sparkles,
   DollarSign,
   UserCheck,
+  Phone,
+  MessageSquare,
+  HelpCircle,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -30,6 +33,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { api, clearToken } from "@/lib/api-client"
 import { logout } from "@/app/login/actions"
+import { toast } from "sonner"
 
 export interface AdminNotification {
   id: string
@@ -41,12 +45,49 @@ export interface AdminNotification {
   createdAt: string
 }
 
+function playNotificationChime() {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    const now = ctx.currentTime
+
+    // First tone (D5 - 587Hz)
+    const osc1 = ctx.createOscillator()
+    const gain1 = ctx.createGain()
+    osc1.type = "sine"
+    osc1.frequency.setValueAtTime(587.33, now)
+    gain1.gain.setValueAtTime(0.15, now)
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
+    osc1.connect(gain1)
+    gain1.connect(ctx.destination)
+    osc1.start(now)
+    osc1.stop(now + 0.3)
+
+    // Second tone (A5 - 880Hz)
+    const osc2 = ctx.createOscillator()
+    const gain2 = ctx.createGain()
+    osc2.type = "sine"
+    osc2.frequency.setValueAtTime(880, now + 0.12)
+    gain2.gain.setValueAtTime(0.2, now + 0.12)
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55)
+    osc2.connect(gain2)
+    gain2.connect(ctx.destination)
+    osc2.start(now + 0.12)
+    osc2.stop(now + 0.55)
+  } catch {
+    // Audio autoplay might be suspended until first user interaction
+  }
+}
+
 export function TopNavigation({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter()
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const seenNotificationIdsRef = useRef<Set<string>>(new Set())
+  const isInitialLoadRef = useRef(true)
 
   async function handleLogout() {
     clearToken()
@@ -56,11 +97,69 @@ export function TopNavigation({ onMenuClick }: { onMenuClick?: () => void }) {
   const fetchNotifications = async () => {
     try {
       setLoading(true)
-      // Attempt backend admin notifications endpoint
-      const res = await api.get('/admin/notifications').catch(() => null)
+      const res = await api.get<{
+        success: boolean
+        data: AdminNotification[]
+        unreadCount?: number
+      }>('/admin/notifications').catch(() => null)
+
       if (res?.success && Array.isArray(res.data)) {
+        // Detect newly arrived notifications
+        if (!isInitialLoadRef.current) {
+          const brandNewItems = res.data.filter(
+            (item) => !seenNotificationIdsRef.current.has(item.id)
+          )
+
+          if (brandNewItems.length > 0) {
+            playNotificationChime()
+            brandNewItems.forEach((newNotif) => {
+              toast.custom((t) => (
+                <div className="flex items-start gap-3 p-4 bg-white border-2 border-amber-400 rounded-2xl shadow-2xl max-w-md w-full">
+                  <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 text-lg font-bold">
+                    🔔
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-xs text-zinc-900 flex items-center gap-1.5">
+                      <span>{newNotif.title}</span>
+                      <span className="px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[9px] font-bold">
+                        NEW
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-600 mt-1 line-clamp-2 leading-relaxed">
+                      {newNotif.message}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toast.dismiss(t)
+                        if (newNotif.link) router.push(newNotif.link)
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs cursor-pointer transition-colors"
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toast.dismiss(t)}
+                      className="text-zinc-400 hover:text-zinc-600 text-sm px-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ), { duration: 8000 })
+            })
+          }
+        }
+
+        // Register seen IDs
+        res.data.forEach((item) => seenNotificationIdsRef.current.add(item.id))
+        isInitialLoadRef.current = false
+
         setNotifications(res.data)
-        setUnreadCount(res.unreadCount ?? res.data.filter((n: AdminNotification) => !n.isRead).length)
+        setUnreadCount(res.unreadCount ?? res.data.filter((n) => !n.isRead).length)
         return
       }
 
@@ -75,7 +174,7 @@ export function TopNavigation({ onMenuClick }: { onMenuClick?: () => void }) {
           title: "Astrologer KYC Verification Required",
           message: `${a.display_name || 'Practitioner'} (${a.phone || a.email || 'New'}) submitted KYC application for admin approval.`,
           type: "kyc",
-          link: "/astrologers",
+          link: "/astrologers/verification",
           isRead: false,
           createdAt: a.created_at || new Date().toISOString(),
         }))
@@ -91,8 +190,8 @@ export function TopNavigation({ onMenuClick }: { onMenuClick?: () => void }) {
 
   useEffect(() => {
     fetchNotifications()
-    // Poll every 30 seconds for live admin updates
-    const interval = setInterval(fetchNotifications, 30000)
+    // Poll every 6 seconds for live real-time admin updates
+    const interval = setInterval(fetchNotifications, 6000)
     return () => clearInterval(interval)
   }, [])
 
@@ -198,12 +297,28 @@ export function TopNavigation({ onMenuClick }: { onMenuClick?: () => void }) {
                     >
                       <div
                         className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                          isKyc
+                          notif.type === 'astrologer_application'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                            : notif.type === 'consultation'
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                            : notif.type === 'enquiry'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                            : isKyc
                             ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
                             : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
                         }`}
                       >
-                        {isKyc ? <Clock className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                        {notif.type === 'astrologer_application' ? (
+                          <Sparkles className="h-4 w-4" />
+                        ) : notif.type === 'consultation' ? (
+                          <Phone className="h-4 w-4" />
+                        ) : notif.type === 'enquiry' ? (
+                          <HelpCircle className="h-4 w-4" />
+                        ) : isKyc ? (
+                          <Clock className="h-4 w-4" />
+                        ) : (
+                          <Bell className="h-4 w-4" />
+                        )}
                       </div>
 
                       <div className="flex-1 min-w-0">
@@ -229,11 +344,11 @@ export function TopNavigation({ onMenuClick }: { onMenuClick?: () => void }) {
 
             <div className="p-2 border-t border-border bg-muted/20 text-center">
               <Link
-                href="/astrologers"
+                href="/astrologers/verification"
                 onClick={() => setIsNotifOpen(false)}
                 className="text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline flex items-center justify-center gap-1 py-1"
               >
-                <span>Review Pending Astrologer KYC</span>
+                <span>Review Astrologer Applications</span>
                 <ExternalLink className="h-3 w-3" />
               </Link>
             </div>

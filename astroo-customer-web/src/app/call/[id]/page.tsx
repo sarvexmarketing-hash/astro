@@ -37,6 +37,8 @@ function CallScreenContent({ astrologerId }: { astrologerId: string }) {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   const ratePerMin = (astrologer?.per_minute_rate || 25) + (isVideo ? 10 : 0);
   const astrologerName = astrologer?.display_name || "Astrologer";
@@ -71,6 +73,24 @@ function CallScreenContent({ astrologerId }: { astrologerId: string }) {
       localStreamRef.current = stream;
       if (localVideoRef.current && isVideo) {
         localVideoRef.current.srcObject = stream;
+      }
+
+      // Initialize background audio recording
+      try {
+        if (typeof MediaRecorder !== "undefined") {
+          const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
+          const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+          recordedChunksRef.current = [];
+          recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+              recordedChunksRef.current.push(event.data);
+            }
+          };
+          recorder.start(1000);
+          mediaRecorderRef.current = recorder;
+        }
+      } catch (recErr) {
+        console.warn("MediaRecorder initialization notice:", recErr);
       }
 
       // Initialize WebRTC Peer Connection
@@ -134,6 +154,26 @@ function CallScreenContent({ astrologerId }: { astrologerId: string }) {
 
   const handleEndCall = async () => {
     setCallState("Ended");
+
+    // Capture and save call recording if recorded
+    let audioBase64 = "";
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+        if (recordedChunksRef.current.length > 0) {
+          const audioBlob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+          audioBase64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string) || "");
+            reader.onerror = () => resolve("");
+            reader.readAsDataURL(audioBlob);
+          });
+        }
+      } catch (recErr) {
+        console.warn("Call recording processing notice:", recErr);
+      }
+    }
+
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
     }
@@ -142,7 +182,10 @@ function CallScreenContent({ astrologerId }: { astrologerId: string }) {
     }
     if (consultation?.id) {
       try {
-        await consultationsService.end(consultation.id, callDuration);
+        await consultationsService.end(consultation.id, {
+          durationSeconds: callDuration,
+          audioBase64: audioBase64 || undefined,
+        });
       } catch (err) {
         console.error("Error ending call:", err);
       }

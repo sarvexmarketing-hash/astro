@@ -13,7 +13,7 @@ interface AuthContextType {
   isVerifiedAstrologer: boolean;
   verificationStatus: 'pending' | 'approved' | 'rejected' | 'resubmit';
   login: (data: { email?: string; phone?: string; password: string }) => Promise<void>;
-  register: (data: { email?: string; phone?: string; password: string; fullName: string }) => Promise<void>;
+  register: (data: { email?: string; phone?: string; password: string; fullName: string; avatarUrl?: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refreshUser();
   };
 
-  const register = async (data: { email?: string; phone?: string; password: string; fullName: string }) => {
+  const register = async (data: { email?: string; phone?: string; password: string; fullName: string; avatarUrl?: string }) => {
     await authService.register(data);
     await refreshUser();
   };

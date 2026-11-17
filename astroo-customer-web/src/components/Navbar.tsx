@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { walletService } from "@/services/wallet";
+import { deriveNameFromEmail } from "@/lib/types";
 import WalletModal from "./WalletModal";
 import {
   Menu,
@@ -44,19 +45,21 @@ export default function Navbar() {
 
   const drawerMenuItems = [
     { label: "Book a Pooja", icon: "🕉️", href: "/pooja" },
+    { label: "Astro Shop & Gems", icon: "💎", href: "/shop" },
     { label: "Consultations", icon: "💬", href: "/astrologers?channel=chat" },
     { label: "Horoscope", icon: "☀️", href: "/#horoscope" },
     { label: "Free Services", icon: "⭐", href: "/kundli" },
     { label: "Calculators", icon: "🧮", href: "/kundli" },
     { label: "Panchang", icon: "📅", href: "/muhurat" },
-    { label: "Shop", icon: "🛍️", href: "/#shop" },
     { label: "Blog", icon: "📖", href: "/#blog" },
+    { label: "Become an Astrologer", icon: "✨", href: "http://localhost:3002/register" },
     { label: "Astrologer Portal", icon: "🔮", href: "/astrologer/login" },
   ];
 
   const desktopNavLinks = [
     { label: "Chat with Astrologer", href: "/astrologers?channel=chat" },
     { label: "Call Astrologer", href: "/astrologers?channel=call" },
+    { label: "Astro Shop", href: "/shop" },
     { label: "Daily Horoscope", href: "/#horoscope" },
     { label: "Free Kundli", href: "/kundli" },
     { label: "Book Muhurtham", href: "/muhurat" },
@@ -179,7 +182,9 @@ export default function Navbar() {
                 title="Profile"
               >
                 <User className="w-4 h-4 text-[#18181B]" />
-                <span className="hidden sm:inline max-w-[80px] truncate">{user.fullName || "Profile"}</span>
+                <span className="hidden sm:inline max-w-[100px] truncate">
+                  {user.fullName || (user as any).full_name || (user.email ? deriveNameFromEmail(user.email) : "Profile")}
+                </span>
               </Link>
             ) : (
               <Link
@@ -249,11 +254,11 @@ export default function Navbar() {
                 >
                   <div className="flex items-center gap-2.5">
                     <div className="w-10 h-10 rounded-full bg-[#D97706] text-white flex items-center justify-center font-bold text-sm">
-                      {(user.fullName?.slice(0, 2) || user.fullName?.[0] || "U").toUpperCase()}
+                      {((user.fullName || (user as any).full_name || (user.email ? deriveNameFromEmail(user.email) : "U")).slice(0, 2)).toUpperCase()}
                     </div>
                     <div className="flex flex-col text-left">
                       <span className="text-xs font-bold text-[#1E1E1E]">
-                        {user.fullName || "User"}
+                        {user.fullName || (user as any).full_name || (user.email ? deriveNameFromEmail(user.email) : "User")}
                       </span>
                       <span className="text-[10px] text-[#92400E]">
                         {user.phone || user.email || "+91 8886782434"}

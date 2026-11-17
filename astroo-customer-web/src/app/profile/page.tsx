@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
 import { usersService } from '../../services/users';
+import { deriveNameFromEmail } from '../../lib/types';
 import {
   User as UserIcon,
   Phone,
@@ -50,8 +51,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setFullName(user.fullName || '');
-      setAvatarUrl(user.avatarUrl || '');
+      const derived = user.email ? deriveNameFromEmail(user.email) : '';
+      setFullName(user.fullName || user.full_name || derived || '');
+      setAvatarUrl(user.avatarUrl || user.avatar_url || '');
     }
   }, [user]);
 
@@ -142,7 +144,7 @@ export default function ProfilePage() {
 
             <div>
               <h3 className="font-extrabold text-[#18181B] text-xl tracking-tight">
-                {fullName || 'Seeker'}
+                {fullName || (user?.email ? deriveNameFromEmail(user.email) : 'Seeker')}
               </h3>
               <div className="mt-1.5 flex items-center justify-center gap-2">
                 <span className="inline-block px-3 py-0.5 rounded-full bg-[#FEF08A] text-[#78350F] text-xs font-bold capitalize border border-[#FDE68A]">

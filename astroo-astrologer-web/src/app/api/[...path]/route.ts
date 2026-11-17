@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const isDev = process.env.NODE_ENV !== 'production';
 const BACKEND_BASE = (
-  process.env.BACKEND_URL
-    ? `${process.env.BACKEND_URL}/api`
-    : process.env.NEXT_PUBLIC_API_URL || 'https://astrowavebackend-production.up.railway.app/api'
+  isDev
+    ? (process.env.BACKEND_URL || 'http://localhost:5001/api')
+    : (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://astrowavebackend-production.up.railway.app/api')
 ).replace(/\/+$/, '');
 
 async function proxyRequest(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {

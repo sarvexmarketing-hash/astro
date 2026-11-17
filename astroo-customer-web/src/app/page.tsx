@@ -581,7 +581,7 @@ export default function HomePage() {
           <h2 className="text-lg sm:text-xl font-bold text-[#18181B]">
             Sacred Rituals & Astrological Reports
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
             <Link
               href="/#horoscope"
               className="p-4 rounded-2xl bg-[#FEF9C3] border border-[#FDE68A] flex flex-col items-center text-center hover:bg-[#FEF08A] transition-all group"
@@ -589,6 +589,15 @@ export default function HomePage() {
               <span className="text-3xl mb-1.5 select-none">☀️</span>
               <span className="text-xs sm:text-sm font-bold text-[#18181B] group-hover:text-[#D97706]">Daily Horoscope</span>
               <span className="text-[11px] text-[#71717A] mt-0.5">Free Daily Insights</span>
+            </Link>
+
+            <Link
+              href="/shop"
+              className="p-4 rounded-2xl bg-[#FEF9C3] border border-[#FDE68A] flex flex-col items-center text-center hover:bg-[#FEF08A] transition-all group"
+            >
+              <span className="text-3xl mb-1.5 select-none">💎</span>
+              <span className="text-xs sm:text-sm font-bold text-[#18181B] group-hover:text-[#D97706]">Astro Gems & Stones</span>
+              <span className="text-[11px] text-[#71717A] mt-0.5">Certified Navratna</span>
             </Link>
 
             <Link
@@ -616,6 +625,110 @@ export default function HomePage() {
               <span className="text-3xl mb-1.5 select-none">✨</span>
               <span className="text-xs sm:text-sm font-bold text-[#18181B] group-hover:text-[#D97706]">Shubh Muhurat</span>
               <span className="text-[11px] text-[#71717A] mt-0.5">Auspicious Dates 2026</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* ===================================================================== */}
+        {/* 6B. ASTRO SHOP & GEMSTONES SHOWCASE                                   */}
+        {/* ===================================================================== */}
+        <div className="space-y-4 pt-2 border-t border-[#FDE68A]/60">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-[#18181B] flex items-center gap-2">
+                <span>💎</span> Astro Gems & Planetary Stones
+              </h2>
+              <p className="text-xs sm:text-sm text-[#71717A]">
+                Astrologer-recommended, 100% lab certified natural gemstones & energised healing stones
+              </p>
+            </div>
+            <Link
+              href="/shop"
+              className="text-xs sm:text-sm font-bold text-[#D97706] hover:underline flex items-center gap-1"
+            >
+              View All Stones →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
+            <Link
+              href="/shop"
+              className="bg-white rounded-2xl border border-[#FDE68A] p-3.5 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="aspect-square w-full rounded-xl overflow-hidden bg-amber-50 mb-2.5">
+                <img
+                  src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&auto=format&fit=crop&q=80"
+                  alt="Yellow Sapphire Pukhraj"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-[#D97706] uppercase tracking-wider">Jupiter (Guru)</span>
+              <h3 className="text-xs sm:text-sm font-bold text-[#18181B] line-clamp-1">Yellow Sapphire (Pukhraj)</h3>
+              <p className="text-[11px] text-[#71717A] line-clamp-1">Wealth & Marriage</p>
+              <div className="mt-2 pt-2 border-t border-zinc-100 flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-extrabold text-[#18181B]">₹4,500</span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Certified</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/shop"
+              className="bg-white rounded-2xl border border-[#FDE68A] p-3.5 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="aspect-square w-full rounded-xl overflow-hidden bg-amber-50 mb-2.5">
+                <img
+                  src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400&auto=format&fit=crop&q=80"
+                  alt="Blue Sapphire Neelam"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-[#D97706] uppercase tracking-wider">Saturn (Shani)</span>
+              <h3 className="text-xs sm:text-sm font-bold text-[#18181B] line-clamp-1">Royal Blue Sapphire (Neelam)</h3>
+              <p className="text-[11px] text-[#71717A] line-clamp-1">Career & Sade Sati Shield</p>
+              <div className="mt-2 pt-2 border-t border-zinc-100 flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-extrabold text-[#18181B]">₹5,999</span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Certified</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/shop"
+              className="bg-white rounded-2xl border border-[#FDE68A] p-3.5 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="aspect-square w-full rounded-xl overflow-hidden bg-amber-50 mb-2.5">
+                <img
+                  src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&auto=format&fit=crop&q=80"
+                  alt="Natural Ruby Manikya"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-[#D97706] uppercase tracking-wider">Sun (Surya)</span>
+              <h3 className="text-xs sm:text-sm font-bold text-[#18181B] line-clamp-1">Natural Ruby (Manikya)</h3>
+              <p className="text-[11px] text-[#71717A] line-clamp-1">Vitality & Leadership</p>
+              <div className="mt-2 pt-2 border-t border-zinc-100 flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-extrabold text-[#18181B]">₹3,999</span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Certified</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/shop"
+              className="bg-white rounded-2xl border border-[#FDE68A] p-3.5 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="aspect-square w-full rounded-xl overflow-hidden bg-amber-50 mb-2.5">
+                <img
+                  src="https://images.unsplash.com/photo-1611591475152-473523dd66c8?w=400&auto=format&fit=crop&q=80"
+                  alt="Emerald Panna"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+              </div>
+              <span className="text-[10px] font-bold text-[#D97706] uppercase tracking-wider">Mercury (Budh)</span>
+              <h3 className="text-xs sm:text-sm font-bold text-[#18181B] line-clamp-1">Natural Emerald (Panna)</h3>
+              <p className="text-[11px] text-[#71717A] line-clamp-1">Intellect & Business</p>
+              <div className="mt-2 pt-2 border-t border-zinc-100 flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-extrabold text-[#18181B]">₹3,499</span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Certified</span>
+              </div>
             </Link>
           </div>
         </div>

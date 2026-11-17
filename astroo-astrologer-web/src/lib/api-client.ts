@@ -9,23 +9,27 @@ export class ApiError extends Error {
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  const local = localStorage.getItem('astro_astrologer_token');
+  const local = localStorage.getItem('astro_astrologer_token') || localStorage.getItem('astro_access_token');
   if (local) return local;
-  const match = document.cookie.match(/(^|;)\s*astro_astrologer_token\s*=\s*([^;]+)/);
+  const match = document.cookie.match(/(^|;)\s*(?:astro_astrologer_token|astro_access_token)\s*=\s*([^;]+)/);
   return match ? decodeURIComponent(match[2]) : null;
 }
 
 export function setToken(token: string): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem('astro_astrologer_token', token);
+    localStorage.setItem('astro_access_token', token);
     document.cookie = `astro_astrologer_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+    document.cookie = `astro_access_token=${token}; path=/; max-age=86400; SameSite=Lax`;
   }
 }
 
 export function clearToken(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('astro_astrologer_token');
+    localStorage.removeItem('astro_access_token');
     document.cookie = `astro_astrologer_token=; path=/; max-age=0; SameSite=Lax`;
+    document.cookie = `astro_access_token=; path=/; max-age=0; SameSite=Lax`;
   }
 }
 

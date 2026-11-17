@@ -81,20 +81,36 @@ export default function AstrologerCard({ astrologer, onInsufficientBalance }: As
               )}
             </Link>
 
-            {/* Status Dot */}
+            {/* Status Dot / In Call / In Chat Badge */}
             <span
-              className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-bold border-2 border-white flex items-center gap-1 shadow-xs ${
+              className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-bold border-2 border-white flex items-center gap-1 shadow-xs whitespace-nowrap ${
                 astrologer.is_busy
-                  ? 'bg-amber-500 text-white'
+                  ? astrologer.active_consultation_type === 'chat'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-amber-600 text-white'
                   : astrologer.is_online
                   ? 'bg-emerald-500 text-white'
                   : 'bg-zinc-400 text-white'
               }`}
             >
-              <span className={`h-1.5 w-1.5 rounded-full ${
-                astrologer.is_busy ? 'bg-white' : astrologer.is_online ? 'bg-white animate-pulse' : 'bg-zinc-200'
-              }`} />
-              {astrologer.is_busy ? 'Busy' : astrologer.is_online ? 'Online' : 'Offline'}
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  astrologer.is_busy
+                    ? 'bg-white animate-pulse'
+                    : astrologer.is_online
+                    ? 'bg-white animate-pulse'
+                    : 'bg-zinc-200'
+                }`}
+              />
+              {astrologer.is_busy
+                ? astrologer.active_consultation_type === 'chat'
+                  ? 'In Chat'
+                  : astrologer.active_consultation_type === 'video'
+                  ? 'In Video'
+                  : 'In Call'
+                : astrologer.is_online
+                ? 'Online'
+                : 'Offline'}
             </span>
           </div>
 
@@ -110,6 +126,14 @@ export default function AstrologerCard({ astrologer, onInsufficientBalance }: As
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 fill-emerald-100" />
               )}
             </div>
+
+            {astrologer.is_busy && Boolean(astrologer.waiting_users_count && astrologer.waiting_users_count > 0) && (
+              <div className="mt-1">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                  ⏳ {astrologer.waiting_users_count} {astrologer.waiting_users_count === 1 ? 'seeker' : 'seekers'} waiting in queue
+                </span>
+              </div>
+            )}
 
             {/* Specialization Tags */}
             <p className="text-xs text-[#71717A] truncate mt-0.5 font-medium">
@@ -167,41 +191,52 @@ export default function AstrologerCard({ astrologer, onInsufficientBalance }: As
       <div className="mt-4 grid grid-cols-3 gap-2 pt-2 border-t border-[#FDE68A]/60">
         <button
           onClick={() => handleStartConsultation('chat')}
-          disabled={Boolean(isInitiating) || astrologer.is_busy}
-          className="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#78350F] border border-[#FDE68A] transition-all font-bold text-xs gap-1 disabled:opacity-50 cursor-pointer shadow-2xs"
+          disabled={Boolean(isInitiating)}
+          className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all font-bold text-xs gap-1 cursor-pointer shadow-2xs ${
+            astrologer.is_busy && astrologer.active_consultation_type === 'chat'
+              ? 'bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300'
+              : 'bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#78350F] border border-[#FDE68A]'
+          }`}
+          title={astrologer.is_busy ? "Astrologer is in session. Click to join the queue!" : "Start Chat"}
         >
           {isInitiating === 'chat' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <MessageSquare className="h-4 w-4 text-[#D97706]" />
           )}
-          <span>Chat</span>
+          <span>{astrologer.is_busy ? 'Wait in Queue' : 'Chat'}</span>
         </button>
 
         <button
           onClick={() => handleStartConsultation('call')}
-          disabled={Boolean(isInitiating) || astrologer.is_busy}
-          className="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#78350F] border border-[#FDE68A] transition-all font-bold text-xs gap-1 disabled:opacity-50 cursor-pointer shadow-2xs"
+          disabled={Boolean(isInitiating)}
+          className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all font-bold text-xs gap-1 cursor-pointer shadow-2xs ${
+            astrologer.is_busy && astrologer.active_consultation_type === 'call'
+              ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
+              : 'bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#78350F] border border-[#FDE68A]'
+          }`}
+          title={astrologer.is_busy ? "Astrologer is on call. Click to join the queue!" : "Start Call"}
         >
           {isInitiating === 'call' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Phone className="h-4 w-4 text-[#16A34A]" />
           )}
-          <span>Call</span>
+          <span>{astrologer.is_busy ? 'Wait in Queue' : 'Call'}</span>
         </button>
 
         <button
           onClick={() => handleStartConsultation('video')}
-          disabled={Boolean(isInitiating) || astrologer.is_busy}
-          className="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#78350F] border border-[#FDE68A] transition-all font-bold text-xs gap-1 disabled:opacity-50 cursor-pointer shadow-2xs"
+          disabled={Boolean(isInitiating)}
+          className="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#78350F] border border-[#FDE68A] transition-all font-bold text-xs gap-1 cursor-pointer shadow-2xs"
+          title={astrologer.is_busy ? "Click to join waiting queue" : "Start Video Call"}
         >
           {isInitiating === 'video' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Video className="h-4 w-4 text-[#A21CAF]" />
           )}
-          <span>Video</span>
+          <span>{astrologer.is_busy ? 'Wait in Queue' : 'Video'}</span>
         </button>
       </div>
     </div>

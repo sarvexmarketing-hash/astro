@@ -138,8 +138,30 @@ export default function AstrologerProfilePage({
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold text-[#18181B]">{astrologerName}</h1>
-            <p className="text-sm font-semibold text-[#D97706] mt-0.5">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-[#18181B]">{astrologerName}</h1>
+              {astrologer?.is_busy ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-amber-600 flex items-center gap-1 shadow-xs">
+                  <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                  {astrologer.active_consultation_type === 'chat' ? 'In Chat' : 'In Call'}
+                </span>
+              ) : astrologer?.is_online ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-emerald-600 flex items-center gap-1 shadow-xs">
+                  <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                  Online
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-zinc-400">
+                  Offline
+                </span>
+              )}
+            </div>
+            {astrologer?.is_busy && (
+              <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full mt-2 inline-block">
+                Currently in another session • {astrologer.waiting_users_count || 0} waiting in queue
+              </p>
+            )}
+            <p className="text-sm font-semibold text-[#D97706] mt-1">
               {astrologer?.specializations?.join(" • ") || "Vedic Astrology • Kundli • Prashna"}
             </p>
             <p className="text-xs text-[#71717A] mt-1">
@@ -195,19 +217,27 @@ export default function AstrologerProfilePage({
             <button
               type="button"
               onClick={() => handleStartConsultation("chat")}
-              className="py-3 px-4 rounded-xl bg-[#FFFBEB] hover:bg-[#FEF3C7] border border-[#FDE68A] text-[#18181B] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-2xs"
+              className={`py-3 px-4 rounded-xl border font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-2xs ${
+                astrologer?.is_busy
+                  ? "bg-purple-100 hover:bg-purple-200 text-purple-900 border-purple-300"
+                  : "bg-[#FFFBEB] hover:bg-[#FEF3C7] border-[#FDE68A] text-[#18181B]"
+              }`}
             >
               <MessageCircle className="w-4 h-4 text-[#D97706]" />
-              <span>Start Chat (₹{chatPricePerMin}/m)</span>
+              <span>{astrologer?.is_busy ? "Wait in Queue (Chat)" : `Start Chat (₹${chatPricePerMin}/m)`}</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleStartConsultation("call")}
-              className="py-3 px-4 rounded-xl bg-[#F7C93E] hover:bg-[#FACC15] text-[#18181B] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-xs"
+              className={`py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-xs ${
+                astrologer?.is_busy
+                  ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300"
+                  : "bg-[#F7C93E] hover:bg-[#FACC15] text-[#18181B]"
+              }`}
             >
               <Phone className="w-4 h-4 text-[#18181B]" />
-              <span>Start Call (₹{callPricePerMin}/m)</span>
+              <span>{astrologer?.is_busy ? "Wait in Queue (Call)" : `Start Call (₹${callPricePerMin}/m)`}</span>
             </button>
           </div>
         </div>

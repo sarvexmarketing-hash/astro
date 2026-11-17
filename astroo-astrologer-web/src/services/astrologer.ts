@@ -11,10 +11,13 @@ export const astrologerService = {
     isOnline?: boolean;
     isBusy?: boolean;
     perMinuteRate?: number;
+    callPerMinuteRate?: number;
     hourlyRate?: number;
     languages?: string[];
     specializations?: string[];
     bio?: string;
+    isChatEnabled?: boolean;
+    isCallEnabled?: boolean;
   }): Promise<AstrologerProfile> {
     const res = await api.put('/astrologers/status', data);
     return res.data;
@@ -22,6 +25,7 @@ export const astrologerService = {
 
   async updateProfile(data: {
     per_minute_rate?: number;
+    call_per_minute_rate?: number;
     hourly_rate?: number;
     specializations?: string[];
     languages?: string[];
@@ -29,15 +33,20 @@ export const astrologerService = {
     experience_years?: number;
     is_online?: boolean;
     is_busy?: boolean;
+    is_chat_enabled?: boolean;
+    is_call_enabled?: boolean;
   }): Promise<AstrologerProfile> {
     const payload = {
       isOnline: data.is_online,
       isBusy: data.is_busy,
       perMinuteRate: data.per_minute_rate,
+      callPerMinuteRate: data.call_per_minute_rate,
       hourlyRate: data.hourly_rate,
       languages: data.languages,
       specializations: data.specializations,
       bio: data.bio,
+      isChatEnabled: data.is_chat_enabled,
+      isCallEnabled: data.is_call_enabled,
     };
     const res = await api.put('/astrologers/status', payload);
     return res.data;
@@ -54,14 +63,15 @@ export const astrologerService = {
       return res.data;
     }
     const res = await api.get('/auth/me');
-    if (res.data?.astrologerProfile) {
+    const u = res.data;
+    if (u?.astrologerProfile) {
       return {
-        ...res.data.astrologerProfile,
-        display_name: res.data.full_name || res.data.astrologerProfile.display_name,
-        avatar_url: res.data.avatar_url,
+        ...u.astrologerProfile,
+        display_name: u.fullName || u.full_name || u.astrologerProfile.display_name,
+        avatar_url: u.avatarUrl || u.avatar_url || u.astrologerProfile.avatar_url,
       };
     }
-    return res.data;
+    return u || res;
   },
 
   async uploadDocument(data: { documentType: string; documentUrl: string }) {

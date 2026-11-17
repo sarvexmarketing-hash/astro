@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { astrologersService } from "@/services/astrologers";
 import { walletService } from "@/services/wallet";
 import { Astrologer } from "@/lib/types";
@@ -41,7 +42,7 @@ const FALLBACK_ASTROLOGERS: Astrologer[] = [
     hourly_rate: 1500,
     per_minute_rate: 25,
     is_verified: true,
-    is_online: true,
+    is_online: false,
     is_busy: false,
     rating: 5.0,
     total_reviews: 420,
@@ -57,7 +58,7 @@ const FALLBACK_ASTROLOGERS: Astrologer[] = [
     hourly_rate: 1800,
     per_minute_rate: 30,
     is_verified: true,
-    is_online: true,
+    is_online: false,
     is_busy: false,
     rating: 4.9,
     total_reviews: 890,
@@ -73,7 +74,7 @@ const FALLBACK_ASTROLOGERS: Astrologer[] = [
     hourly_rate: 1200,
     per_minute_rate: 20,
     is_verified: true,
-    is_online: true,
+    is_online: false,
     is_busy: false,
     rating: 4.8,
     total_reviews: 310,
@@ -89,7 +90,7 @@ const FALLBACK_ASTROLOGERS: Astrologer[] = [
     hourly_rate: 2400,
     per_minute_rate: 40,
     is_verified: true,
-    is_online: true,
+    is_online: false,
     is_busy: false,
     rating: 5.0,
     total_reviews: 1450,
@@ -105,7 +106,7 @@ const FALLBACK_ASTROLOGERS: Astrologer[] = [
     hourly_rate: 1500,
     per_minute_rate: 25,
     is_verified: true,
-    is_online: true,
+    is_online: false,
     is_busy: false,
     rating: 4.9,
     total_reviews: 520,
@@ -147,8 +148,10 @@ function AstrologersListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialChannel = searchParams.get("channel") || "chat"; // 'chat' | 'call' | 'all'
+  const isMuhuratView = searchParams.get("service") === "muhurat" || searchParams.get("muhurat") === "true";
 
   const { user, isAuthenticated } = useAuth();
+  const { socket } = useSocket();
 
   // State
   const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
@@ -176,6 +179,56 @@ function AstrologersListContent() {
   });
   const [showWalletModal, setShowWalletModal] = useState(false);
 
+  // Real-time synchronization of presence and status changes
+  useEffect(() => {
+    if (!socket) return;
+
+    const handlePresenceChanged = (data: { astrologerId: string; isOnline: boolean }) => {
+      setAstrologers((prev) =>
+        prev.map((astro) =>
+          astro.id === data.astrologerId
+            ? { ...astro, is_online: Boolean(data.isOnline) }
+            : astro
+        )
+      );
+    };
+
+    const handleStatusChanged = (data: {
+      astrologerId: string;
+      isOnline?: boolean;
+      isBusy?: boolean;
+      activeConsultationType?: "chat" | "call" | "video" | null;
+      waitingUsersCount?: number;
+    }) => {
+      setAstrologers((prev) =>
+        prev.map((astro) => {
+          if (astro.id === data.astrologerId) {
+            return {
+              ...astro,
+              ...(typeof data.isOnline === "boolean" ? { is_online: data.isOnline } : {}),
+              ...(typeof data.isBusy === "boolean" ? { is_busy: data.isBusy } : {}),
+              ...(data.activeConsultationType !== undefined
+                ? { active_consultation_type: data.activeConsultationType }
+                : {}),
+              ...(data.waitingUsersCount !== undefined
+                ? { waiting_users_count: Number(data.waitingUsersCount) }
+                : {}),
+            };
+          }
+          return astro;
+        })
+      );
+    };
+
+    socket.on("astrologer_presence_changed", handlePresenceChanged);
+    socket.on("astrologer_status_changed", handleStatusChanged);
+
+    return () => {
+      socket.off("astrologer_presence_changed", handlePresenceChanged);
+      socket.off("astrologer_status_changed", handleStatusChanged);
+    };
+  }, [socket]);
+
   // Load Astrologers & Wallet
   useEffect(() => {
     loadData();
@@ -185,7 +238,7 @@ function AstrologersListContent() {
     try {
       setIsLoading(true);
       const [fetchedAstrologers, w] = await Promise.all([
-        astrologersService.list(),
+        astrologersService.list(isMuhuratView ? { service: "muhurat", is_muhurat_eligible: true } : {}),
         walletService.getWallet().catch(() => null),
       ]);
 
@@ -212,6 +265,13 @@ function AstrologersListContent() {
       .filter((astro) => {
         // Online filter
         if (onlyOnline && !astro.is_online) return false;
+
+        // Channel filter (Chat vs Call vs All)
+        if (activeChannel === "chat" && astro.is_chat_enabled === false) return false;
+        if (activeChannel === "call" && astro.is_call_enabled === false) return false;
+
+        // Muhurat eligibility filter
+        if (isMuhuratView && !astro.is_muhurat_eligible) return false;
 
         // Category filter
         if (selectedCategory !== "All") {
@@ -248,7 +308,7 @@ function AstrologersListContent() {
         if (sortBy === "price_desc") return (b.per_minute_rate || 0) - (a.per_minute_rate || 0);
         return 0;
       });
-  }, [astrologers, onlyOnline, selectedCategory, searchQuery, sortBy]);
+  }, [astrologers, onlyOnline, selectedCategory, searchQuery, sortBy, isMuhuratView]);
 
   // Handle Starting Chat Consultation
   const handleStartChat = (astro: Astrologer) => {
@@ -259,7 +319,12 @@ function AstrologersListContent() {
       return;
     }
 
-    const rate = astro.per_minute_rate || 25;
+    if (astro.is_chat_enabled === false) {
+      alert(`${astro.display_name} is currently available for Phone / Video Calls only.`);
+      return;
+    }
+
+    const rate = Number(astro.per_minute_rate) || 20;
     const minRequired = Math.max(75, rate * 3); // 3 mins threshold
 
     if (!isAuthenticated) {
@@ -291,7 +356,12 @@ function AstrologersListContent() {
       return;
     }
 
-    const rate = (astro.per_minute_rate || 25) + 10;
+    if (astro.is_call_enabled === false) {
+      alert(`${astro.display_name} is currently available for Live Chat consultations only.`);
+      return;
+    }
+
+    const rate = Number(astro.call_per_minute_rate) || (Number(astro.per_minute_rate) || 20) + 5;
     const minRequired = Math.max(100, rate * 3);
 
     if (!isAuthenticated) {
@@ -334,10 +404,16 @@ function AstrologersListContent() {
                 </div>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#18181B] tracking-tight">
-                {activeChannel === "call" ? "Call an Astrologer" : "Chat with Astrologer"}
+                {isMuhuratView
+                  ? "Book Auspicious Muhurtham Astrologer"
+                  : activeChannel === "call"
+                  ? "Call an Astrologer"
+                  : "Chat with Astrologer"}
               </h1>
               <p className="text-xs sm:text-sm text-[#71717A] max-w-2xl mt-1">
-                {activeChannel === "call"
+                {isMuhuratView
+                  ? "Consult certified Vedic Astrologers authorized by Astrowave to calculate accurate Shubh Muhurat for Vivah, Griha Pravesh, Namkaran & business inaugurations."
+                  : activeChannel === "call"
                   ? "Talk directly to India's top certified Vedic Pandits, Tarot masters & Numerologists via crystal-clear voice calling."
                   : "Connect instantly with top certified Vedic Astrologers, Kundli Readers & Tarot Masters for 1-on-1 private live chat guidance."}
               </p>
@@ -538,11 +614,13 @@ function AstrologersListContent() {
                         )}
                       </Link>
 
-                      {/* Online/Offline status indicator */}
+                      {/* Online/Offline / In Call / In Chat status indicator */}
                       <span
-                        className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold border-2 border-white flex items-center gap-1 shadow-xs ${
+                        className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold border-2 border-white flex items-center gap-1 shadow-xs whitespace-nowrap ${
                           astro.is_busy
-                            ? "bg-amber-500 text-white"
+                            ? astro.active_consultation_type === 'chat'
+                              ? "bg-purple-600 text-white"
+                              : "bg-amber-600 text-white"
                             : astro.is_online
                             ? "bg-emerald-500 text-white"
                             : "bg-zinc-400 text-white"
@@ -551,13 +629,21 @@ function AstrologersListContent() {
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
                             astro.is_busy
-                              ? "bg-white"
+                              ? "bg-white animate-pulse"
                               : astro.is_online
                               ? "bg-white animate-pulse"
                               : "bg-zinc-200"
                           }`}
                         />
-                        {astro.is_busy ? "Busy" : astro.is_online ? "Online" : "Offline"}
+                        {astro.is_busy
+                          ? astro.active_consultation_type === 'chat'
+                            ? "In Chat"
+                            : astro.active_consultation_type === 'video'
+                            ? "In Video"
+                            : "In Call"
+                          : astro.is_online
+                          ? "Online"
+                          : "Offline"}
                       </span>
                     </div>
 
@@ -575,6 +661,26 @@ function AstrologersListContent() {
                         {user?.id === astro.id && (
                           <span className="px-1.5 py-0.5 rounded-md bg-[#FEF08A] text-[#78350F] text-[10px] font-black border border-[#F7C93E]">
                             You (Your Profile)
+                          </span>
+                        )}
+                        {astro.is_busy && Boolean(astro.waiting_users_count && astro.waiting_users_count > 0) && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-bold border border-amber-300">
+                            ⏳ {astro.waiting_users_count} in queue
+                          </span>
+                        )}
+                        {astro.is_muhurat_eligible && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-bold border border-amber-300">
+                            ✨ Muhurtham Verified
+                          </span>
+                        )}
+                        {astro.is_chat_enabled === false && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300">
+                            📞 Call Only
+                          </span>
+                        )}
+                        {astro.is_call_enabled === false && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-900 text-[10px] font-bold border border-sky-300">
+                            💬 Chat Only
                           </span>
                         )}
                       </div>
@@ -619,10 +725,30 @@ function AstrologersListContent() {
                     </div>
 
                     <div className="text-right">
-                      <span className="text-base font-extrabold text-[#18181B]">
-                        ₹{astro.per_minute_rate || 25}
-                      </span>
-                      <span className="text-[10px] text-[#71717A]">/min</span>
+                      {activeChannel === "call" ? (
+                        <div>
+                          <span className="text-base font-extrabold text-[#18181B]">
+                            ₹{astro.call_per_minute_rate || 25}
+                          </span>
+                          <span className="text-[10px] text-[#71717A]">/min (Call)</span>
+                        </div>
+                      ) : activeChannel === "chat" ? (
+                        <div>
+                          <span className="text-base font-extrabold text-[#18181B]">
+                            ₹{astro.per_minute_rate || 20}
+                          </span>
+                          <span className="text-[10px] text-[#71717A]">/min (Chat)</span>
+                        </div>
+                      ) : (
+                        <div className="leading-tight">
+                          <div className="text-xs font-bold text-[#18181B]">
+                            Chat: ₹{astro.per_minute_rate || 20}/m
+                          </div>
+                          <div className="text-[11px] text-[#71717A]">
+                            Call: ₹{astro.call_per_minute_rate || 25}/m
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -632,10 +758,14 @@ function AstrologersListContent() {
                   {/* Chat Button (Always prominent) */}
                   <button
                     onClick={() => handleStartChat(astro)}
-                    disabled={astro.is_busy || user?.id === astro.id}
+                    disabled={user?.id === astro.id || astro.is_chat_enabled === false}
                     className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl transition-all font-bold text-xs shadow-2xs cursor-pointer active:scale-98 disabled:opacity-50 ${
                       user?.id === astro.id
                         ? "bg-zinc-100 text-zinc-500 border border-zinc-200"
+                        : astro.is_chat_enabled === false
+                        ? "bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed"
+                        : astro.is_busy
+                        ? "bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300"
                         : "bg-[#FEF08A] hover:bg-[#FACC15] text-[#78350F] border border-[#F7C93E]"
                     }`}
                   >
@@ -643,6 +773,10 @@ function AstrologersListContent() {
                     <span>
                       {user?.id === astro.id
                         ? "Your Profile"
+                        : astro.is_chat_enabled === false
+                        ? "Chat Disabled"
+                        : astro.is_busy
+                        ? "Wait in Queue (Chat)"
                         : astro.is_online
                         ? "Chat"
                         : "Request Chat"}
@@ -652,15 +786,27 @@ function AstrologersListContent() {
                   {/* Call Button */}
                   <button
                     onClick={() => handleStartCall(astro)}
-                    disabled={astro.is_busy || user?.id === astro.id}
+                    disabled={user?.id === astro.id || astro.is_call_enabled === false}
                     className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl transition-all font-bold text-xs shadow-2xs cursor-pointer active:scale-98 disabled:opacity-50 ${
                       user?.id === astro.id
                         ? "bg-zinc-100 text-zinc-500 border border-zinc-200"
+                        : astro.is_call_enabled === false
+                        ? "bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed"
+                        : astro.is_busy
+                        ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300"
                         : "bg-[#DCFCE7] hover:bg-[#BBF7D0] text-[#15803D] border border-[#86EFAC]"
                     }`}
                   >
                     <Phone className="w-3.5 h-3.5 text-[#16A34A]" />
-                    <span>{user?.id === astro.id ? "Your Profile" : "Call"}</span>
+                    <span>
+                      {user?.id === astro.id
+                        ? "Your Profile"
+                        : astro.is_call_enabled === false
+                        ? "Call Disabled"
+                        : astro.is_busy
+                        ? "Wait in Queue (Call)"
+                        : "Call"}
+                    </span>
                   </button>
                 </div>
               </div>

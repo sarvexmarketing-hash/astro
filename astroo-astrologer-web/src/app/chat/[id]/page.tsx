@@ -37,7 +37,7 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
   const consultationId = resolvedParams.id;
   const router = useRouter();
   const { user, isAuthenticated, isAstrologer, isLoading: authLoading } = useAuth();
-  const { socket, joinConsultation, leaveConsultation, sendMessage } = useSocket();
+  const { socket, joinConsultation, leaveConsultation, sendMessage, waitingSeekers } = useSocket();
 
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -76,7 +76,28 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
 
     // 2. Fetch messages
     consultationsService.getMessages(consultationId).then((history) => {
-      setMessages(history);
+      const deduplicated: ChatMessage[] = [];
+      for (const m of history || []) {
+        const mAny = m as any;
+        const isDup = deduplicated.some((existing) => {
+          const exAny = existing as any;
+          if (existing.id && m.id && existing.id === m.id) return true;
+          if (exAny._id && mAny._id && exAny._id === mAny._id) return true;
+          if (
+            (existing.senderId || exAny.sender_id) === (m.senderId || mAny.sender_id) &&
+            (existing.content || existing.text) === (m.content || m.text)
+          ) {
+            const timeDiff = Math.abs(
+              new Date(existing.createdAt || exAny.created_at || Date.now()).getTime() -
+              new Date(m.createdAt || mAny.created_at || Date.now()).getTime()
+            );
+            if (timeDiff < 3000) return true;
+          }
+          return false;
+        });
+        if (!isDup) deduplicated.push(m);
+      }
+      setMessages(deduplicated);
       setIsLoading(false);
     }).catch(() => {
       setIsLoading(false);
@@ -86,12 +107,46 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
     joinConsultation(consultationId);
 
     if (socket) {
+      const reJoin = () => joinConsultation(consultationId);
+      socket.on('connect', reJoin);
+
       const handleNewMessage = (msg: any) => {
         const cId = msg.consultationId || msg.consultation_id || msg.conversationId;
-        if (cId === consultationId) {
+        if (!cId || cId === consultationId) {
           setMessages((prev) => {
             const id = msg.id || msg._id;
+            // 1. Direct ID match
             if (id && prev.some((m) => (m.id || m._id) === id)) return prev;
+
+            // 2. Check if replacing an optimistic message
+            const optIdx = prev.findIndex((m) =>
+              (m.id === id || m._id === id || m.id?.startsWith('astro_') || !m.id) &&
+              ((m.content || m.text) === (msg.content || msg.text))
+            );
+            if (optIdx !== -1) {
+              const next = [...prev];
+              next[optIdx] = msg;
+              return next;
+            }
+
+            // 3. Deduplicate recent duplicate from same sender
+            const isDup = prev.some((m) => {
+              const mAny = m as any;
+              const sameSender =
+                ((m.senderId || mAny.sender_id) && (m.senderId || mAny.sender_id) === (msg.senderId || msg.sender_id)) ||
+                ((m.senderRole || mAny.sender_role) && (m.senderRole || mAny.sender_role) === (msg.senderRole || msg.sender_role));
+              const sameContent = (m.content || m.text) === (msg.content || msg.text);
+              if (sameSender && sameContent) {
+                const diff = Math.abs(
+                  new Date(m.createdAt || mAny.created_at || Date.now()).getTime() -
+                  new Date(msg.createdAt || msg.created_at || Date.now()).getTime()
+                );
+                if (diff < 4000) return true;
+              }
+              return false;
+            });
+            if (isDup) return prev;
+
             return [...prev, msg];
           });
         }
@@ -107,20 +162,17 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
         setConsultation((prev) => prev ? { ...prev, state: 'ENDED' } : null);
       };
 
-      socket.on('new_message', handleNewMessage);
       socket.on('chat_message', handleNewMessage);
-      socket.on('receive_message', handleNewMessage);
       socket.on('consultation_tick', handleTick);
       socket.on('call_ended', handleEnded);
       socket.on('call_end', handleEnded);
 
       return () => {
-        socket.off('new_message', handleNewMessage);
         socket.off('chat_message', handleNewMessage);
-        socket.off('receive_message', handleNewMessage);
         socket.off('consultation_tick', handleTick);
         socket.off('call_ended', handleEnded);
         socket.off('call_end', handleEnded);
+        socket.off('connect', reJoin);
         leaveConsultation(consultationId);
       };
     }
@@ -162,24 +214,27 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
 
     setMessages((prev) => [...prev, optimisticMessage]);
 
-    // 1. Emit via socket for instant live chat delivery
-    sendMessage({
-      consultationId,
-      recipientId: consultation.user_id,
-      content,
-      messageType: 'text',
-      id: tempId,
-    });
-
-    // 2. Persist via HTTP
-    try {
-      await consultationsService.sendMessage({
+    // 1. Emit via socket if connected
+    if (socket && socket.connected) {
+      sendMessage({
         consultationId,
         recipientId: consultation.user_id,
         content,
+        messageType: 'text',
+        id: tempId,
       });
-    } catch (err) {
-      console.warn('HTTP fallback delivery notice:', err);
+    } else {
+      // 2. Fallback to HTTP only if socket is offline
+      try {
+        await consultationsService.sendMessage({
+          consultationId,
+          recipientId: consultation.user_id,
+          content,
+          id: tempId,
+        });
+      } catch (err) {
+        console.warn('HTTP fallback delivery notice:', err);
+      }
     }
   };
 
@@ -254,6 +309,13 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
 
           {/* Right: Metrics & End Button */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Waiting Seekers Badge */}
+            {waitingSeekers.length > 0 && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-black shadow-xs animate-pulse">
+                <span>🔔 {waitingSeekers.length} waiting in line</span>
+              </div>
+            )}
+
             {/* Live Timer Badge */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs font-bold text-[#92400E]">
               <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />

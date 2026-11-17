@@ -21,7 +21,7 @@ import {
 export default function ConsultationRequestsPage() {
   const router = useRouter();
   const { isAuthenticated, isAstrologer, isLoading: authLoading } = useAuth();
-  const { incomingRequest, clearIncomingRequest } = useSocket();
+  const { socket, incomingRequest, clearIncomingRequest } = useSocket();
 
   const [pendingConsultations, setPendingConsultations] = useState<Consultation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,9 +36,8 @@ export default function ConsultationRequestsPage() {
   const loadRequests = async () => {
     try {
       setIsLoading(true);
-      const list = await consultationsService.getHistory();
-      const pending = list.filter((c) => ['REQUESTED', 'ACCEPTED'].includes(c.state));
-      setPendingConsultations(pending);
+      const list = await consultationsService.listRequests();
+      setPendingConsultations(list || []);
     } catch (err) {
       console.error('Error loading requests:', err);
     } finally {
@@ -51,6 +50,23 @@ export default function ConsultationRequestsPage() {
       loadRequests();
     }
   }, [isAuthenticated, isAstrologer]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleQueueChange = () => {
+      loadRequests();
+    };
+    socket.on('consultation_requested', handleQueueChange);
+    socket.on('incoming_consultation', handleQueueChange);
+    socket.on('user_waiting_alert', handleQueueChange);
+    socket.on('consultation_ended', handleQueueChange);
+    return () => {
+      socket.off('consultation_requested', handleQueueChange);
+      socket.off('incoming_consultation', handleQueueChange);
+      socket.off('user_waiting_alert', handleQueueChange);
+      socket.off('consultation_ended', handleQueueChange);
+    };
+  }, [socket]);
 
   const handleAccept = async (consultationId: string, type: string) => {
     try {

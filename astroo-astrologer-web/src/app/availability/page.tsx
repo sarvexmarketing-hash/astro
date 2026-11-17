@@ -43,6 +43,8 @@ export default function AvailabilityPage() {
   const [perMinuteRate, setPerMinuteRate] = useState<number>(30);
   const [selectedSpecializations, setSelectedSpecializations] = useState<string[]>([]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [isChatEnabled, setIsChatEnabled] = useState(true);
+  const [isCallEnabled, setIsCallEnabled] = useState(true);
 
   useEffect(() => {
     loadProfile();
@@ -57,6 +59,8 @@ export default function AvailabilityPage() {
       setPerMinuteRate(data.per_minute_rate || 30);
       setSelectedSpecializations(data.specializations || []);
       setSelectedLanguages(data.languages || []);
+      setIsChatEnabled(data.is_chat_enabled !== false);
+      setIsCallEnabled(data.is_call_enabled !== false);
     } catch (err: any) {
       console.error("Failed to load profile:", err);
       setMessage({ type: "error", text: "Failed to load current availability settings." });
@@ -109,6 +113,10 @@ export default function AvailabilityPage() {
 
   const handleSaveRatesAndExpertise = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isChatEnabled && !isCallEnabled) {
+      setMessage({ type: "error", text: "You must keep at least one consultation channel (Call or Chat) active." });
+      return;
+    }
     try {
       setSaving(true);
       setMessage(null);
@@ -116,8 +124,10 @@ export default function AvailabilityPage() {
         per_minute_rate: Number(perMinuteRate),
         specializations: selectedSpecializations,
         languages: selectedLanguages,
+        is_chat_enabled: isChatEnabled,
+        is_call_enabled: isCallEnabled,
       });
-      setMessage({ type: "success", text: "Availability, consulting rate, and expertise updated successfully!" });
+      setMessage({ type: "success", text: "Availability, channels, consulting rate, and expertise updated successfully!" });
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to update availability profile." });
     } finally {
@@ -227,6 +237,68 @@ export default function AvailabilityPage() {
               <span className="text-xl font-black text-[#15803D] mt-1">₹{(perMinuteRate * 0.8).toFixed(2)} / min</span>
               <span className="text-[11px] text-[#71717A] mt-0.5">₹{(perMinuteRate * 0.8 * 15).toFixed(0)} for a 15-minute consultation</span>
             </div>
+          </div>
+        </div>
+
+        {/* Consultation Channels Selection */}
+        <div className="p-6 rounded-2xl bg-white border border-[#FDE68A] shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#FEF9C3] border border-[#FDE68A] flex items-center justify-center text-[#D97706]">
+                <Radio className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-[#D97706]">Consultation Channels</h2>
+                <p className="text-xs text-[#71717A]">Choose whether you accept live chat, audio/video calls, or both.</p>
+              </div>
+            </div>
+            {!isChatEnabled && isCallEnabled ? (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-300">
+                📞 Call Only Mode
+              </span>
+            ) : isChatEnabled && !isCallEnabled ? (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                💬 Chat Only Mode
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                Chat & Call Active
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            <label className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${isChatEnabled ? 'bg-amber-50/70 border-amber-300' : 'bg-zinc-50 border-zinc-200 opacity-60'}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">💬</span>
+                <div>
+                  <span className="font-bold text-sm block text-zinc-900">Live Chat Consultations</span>
+                  <span className="text-xs text-zinc-500">Allow seekers to message and chat with you</span>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={isChatEnabled}
+                onChange={(e) => setIsChatEnabled(e.target.checked)}
+                className="h-5 w-5 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+              />
+            </label>
+
+            <label className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${isCallEnabled ? 'bg-amber-50/70 border-amber-300' : 'bg-zinc-50 border-zinc-200 opacity-60'}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📞</span>
+                <div>
+                  <span className="font-bold text-sm block text-zinc-900">Voice & Video Calls</span>
+                  <span className="text-xs text-zinc-500">Allow seekers to initiate audio/video calls</span>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={isCallEnabled}
+                onChange={(e) => setIsCallEnabled(e.target.checked)}
+                className="h-5 w-5 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer"
+              />
+            </label>
           </div>
         </div>
 

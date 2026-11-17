@@ -132,7 +132,7 @@ export default function MuhuratPage() {
             {categories.map((cat) => (
               <div
                 key={cat.id}
-                onClick={() => router.push(`/astrologers?channel=chat`)}
+                onClick={() => router.push(`/astrologers?service=muhurat&channel=chat`)}
                 className="p-4 bg-white rounded-2xl border border-[#FDE68A] shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-3.5 min-w-0">

@@ -29,7 +29,7 @@ function AstrologerCallContent({ params }: { params: Promise<{ id: string }> }) 
 
   const router = useRouter();
   const { user, isAuthenticated, isAstrologer, isLoading: authLoading } = useAuth();
-  const { socket, endCall } = useSocket();
+  const { socket, endCall, waitingSeekers } = useSocket();
 
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [callState, setCallState] = useState<'connecting' | 'connected' | 'ended'>('connecting');
@@ -43,6 +43,8 @@ function AstrologerCallContent({ params }: { params: Promise<{ id: string }> }) 
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const webrtcClientRef = useRef<WebRTCClient | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAstrologer)) {
@@ -86,6 +88,23 @@ function AstrologerCallContent({ params }: { params: Promise<{ id: string }> }) 
       client.initialize().then((localStream) => {
         if (callType === 'video' && localVideoRef.current) {
           localVideoRef.current.srcObject = localStream;
+        }
+        // Initialize background call recording
+        try {
+          if (typeof MediaRecorder !== 'undefined' && localStream.getAudioTracks().length > 0) {
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+            const recorder = mimeType ? new MediaRecorder(localStream, { mimeType }) : new MediaRecorder(localStream);
+            recordedChunksRef.current = [];
+            recorder.ondataavailable = (event) => {
+              if (event.data && event.data.size > 0) {
+                recordedChunksRef.current.push(event.data);
+              }
+            };
+            recorder.start(1000);
+            mediaRecorderRef.current = recorder;
+          }
+        } catch (recErr) {
+          console.warn('Astrologer MediaRecorder init notice:', recErr);
         }
       }).catch((err) => {
         console.error('WebRTC astrologer init error:', err);
@@ -148,6 +167,24 @@ function AstrologerCallContent({ params }: { params: Promise<{ id: string }> }) 
 
   const handleEndCall = async () => {
     try {
+      let audioBase64 = '';
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+          if (recordedChunksRef.current.length > 0) {
+            const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+            audioBase64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve((reader.result as string) || '');
+              reader.onerror = () => resolve('');
+              reader.readAsDataURL(audioBlob);
+            });
+          }
+        } catch (recErr) {
+          console.warn('Call recording processing error:', recErr);
+        }
+      }
+
       if (webrtcClientRef.current) {
         webrtcClientRef.current.dispose();
       }
@@ -157,7 +194,10 @@ function AstrologerCallContent({ params }: { params: Promise<{ id: string }> }) 
         durationSeconds: callDuration,
       });
 
-      const res = await consultationsService.end(consultationId, callDuration);
+      const res = await consultationsService.end(consultationId, {
+        durationSeconds: callDuration,
+        audioBase64: audioBase64 || undefined,
+      });
       setEndedSummary(res.billing || res.data);
       setCallState('ended');
     } catch {
@@ -193,6 +233,13 @@ function AstrologerCallContent({ params }: { params: Promise<{ id: string }> }) 
             <span className="text-emerald-400 font-bold">Rate: ₹{consultation?.rate_per_minute}/min</span>
           </div>
         </div>
+
+        {waitingSeekers.length > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-black shadow-xs animate-pulse">
+            <Clock className="w-3.5 h-3.5 text-slate-950" />
+            <span>🔔 {waitingSeekers.length} {waitingSeekers.length === 1 ? 'seeker' : 'seekers'} waiting in line</span>
+          </div>
+        )}
 
         <span
           className={`px-3 py-1 rounded-full text-xs font-bold ${

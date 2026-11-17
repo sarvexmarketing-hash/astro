@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { usersService } from '../services/users';
 import AstrologerSidebar from './AstrologerSidebar';
 import AstrologerHeader from './AstrologerHeader';
 import GlobalCallListener from './GlobalCallListener';
@@ -18,6 +19,8 @@ import {
   User as UserIcon,
   FileText,
   Sparkles,
+  Camera,
+  Upload,
 } from 'lucide-react';
 
 interface PortalGuardProps {
@@ -39,7 +42,33 @@ export default function PortalGuard({ children }: PortalGuardProps) {
   } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const photoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setStatusMessage('Please select a valid image file');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        setIsUploadingPhoto(true);
+        setStatusMessage(null);
+        await usersService.updateProfile({ avatarUrl: reader.result as string });
+        await refreshUser();
+        setStatusMessage('Profile photo updated successfully!');
+      } catch (err: any) {
+        setStatusMessage(err.message || 'Failed to update photo');
+      } finally {
+        setIsUploadingPhoto(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const isAuthRoute = pathname === '/login' || pathname === '/register';
 
@@ -190,6 +219,57 @@ export default function PortalGuard({ children }: PortalGuardProps) {
                 Application Summary
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* Profile Photo Display Row */}
+                <div className="col-span-1 sm:col-span-2 p-3.5 rounded-2xl border border-amber-200 bg-amber-50/60 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-amber-300 shadow-xs bg-white shrink-0">
+                      {user?.avatarUrl || user?.avatar_url ? (
+                        <img
+                          src={user.avatarUrl || user.avatar_url}
+                          alt="Practitioner Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-amber-700 bg-amber-100 font-bold text-xl">
+                          {(user?.fullName || user?.full_name || 'A')[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-500 font-medium block">Customer Portal Profile Photo</span>
+                      <span className="font-bold text-xs text-zinc-800">
+                        {user?.avatarUrl || user?.avatar_url ? 'Photo Attached & Verified' : 'No photo uploaded yet'}
+                      </span>
+                      <span className="text-[10px] text-amber-700 block mt-0.5 font-medium">
+                        Shown to seekers across the Customer Portal
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/jpg"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingPhoto}
+                      onClick={() => photoInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isUploadingPhoto ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Camera className="w-3.5 h-3.5 text-amber-700" />
+                      )}
+                      <span>{user?.avatarUrl || user?.avatar_url ? 'Change Photo' : 'Upload Photo'}</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="p-3.5 rounded-xl border border-zinc-200 bg-zinc-50/60 flex items-center gap-2.5">
                   <UserIcon className="w-4 h-4 text-amber-600 flex-shrink-0" />
                   <div>

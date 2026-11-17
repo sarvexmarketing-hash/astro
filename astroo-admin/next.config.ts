@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
-const configuredApi = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "https://astrowavebackend-production.up.railway.app/api";
+const isDev = process.env.NODE_ENV !== "production";
+const configuredApi = isDev
+  ? "http://localhost:5001/api"
+  : (process.env.BACKEND_URL
+      ? `${process.env.BACKEND_URL}/api`
+      : process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "https://astrowavebackend-production.up.railway.app/api");
 
 const nextConfig: NextConfig = {
   basePath: "/admin",

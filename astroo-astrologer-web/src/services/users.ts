@@ -2,7 +2,7 @@ import { api } from '../lib/api-client';
 import { AppNotification } from '../lib/types';
 
 export const usersService = {
-  async updateProfile(data: { fullName?: string; avatarUrl?: string }) {
+  async updateProfile(data: { fullName?: string; avatarUrl?: string; bio?: string }) {
     const res = await api.put('/users/profile', data);
     return res.data;
   },

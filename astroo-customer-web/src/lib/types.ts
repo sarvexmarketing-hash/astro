@@ -4,8 +4,31 @@ export interface User {
   phone: string | null;
   role: 'customer' | 'astrologer' | 'admin' | 'super_admin';
   fullName?: string;
+  full_name?: string;
   avatarUrl?: string;
+  avatar_url?: string;
   isVerified?: boolean;
+}
+
+export function deriveNameFromEmail(email: string | null | undefined): string {
+  if (!email || typeof email !== 'string') return '';
+  const localPart = email.split('@')[0];
+  if (!localPart) return '';
+
+  let clean = localPart.replace(/[._\-+]/g, ' ');
+  clean = clean.replace(/\d+$/g, '').trim();
+  if (!clean) clean = localPart.replace(/\d+/g, '').trim() || localPart;
+  clean = clean.replace(/([a-z])([A-Z])/g, '$1 $2');
+
+  if (!clean.includes(' ') && clean.toLowerCase().startsWith('javed') && clean.toLowerCase().endsWith('sayed')) {
+    clean = 'javed sayed';
+  }
+
+  return clean
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
 }
 
 export interface Astrologer {
@@ -16,9 +39,15 @@ export interface Astrologer {
   experience_years: number;
   hourly_rate: number;
   per_minute_rate: number;
+  call_per_minute_rate?: number;
+  is_muhurat_eligible?: boolean;
+  is_chat_enabled?: boolean;
+  is_call_enabled?: boolean;
   is_verified: boolean;
   is_online: boolean;
   is_busy: boolean;
+  active_consultation_type?: 'chat' | 'call' | 'video' | null;
+  waiting_users_count?: number;
   rating: number;
   total_reviews: number;
   total_consultations: number;
@@ -150,6 +179,10 @@ export interface AstrologerProfile {
   experience_years: number;
   hourly_rate: number;
   per_minute_rate: number;
+  call_per_minute_rate?: number;
+  is_muhurat_eligible?: boolean;
+  is_chat_enabled?: boolean;
+  is_call_enabled?: boolean;
   is_verified: boolean;
   verification_status?: 'pending' | 'approved' | 'rejected';
   is_online: boolean;

@@ -1,10 +1,12 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import logoImg from "../../../public/logo.png"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { api } from "@/lib/api-client"
 import {
   LayoutDashboard,
   Users,
@@ -39,6 +41,11 @@ const SIDEBAR_ITEMS = [
     title: "Astrologers",
     icon: Star,
     href: "/astrologers",
+  },
+  {
+    title: "Astrologer Verification",
+    icon: ShieldAlert,
+    href: "/astrologers/verification",
   },
   {
     title: "Consultations",
@@ -104,6 +111,25 @@ const SIDEBAR_ITEMS = [
 
 export function Sidebar({ className, isMobileOpen, onClose }: { className?: string, isMobileOpen?: boolean, onClose?: () => void }) {
   const pathname = usePathname()
+  const [pendingCount, setPendingCount] = useState<number>(0)
+
+  useEffect(() => {
+    const fetchPending = async () => {
+      try {
+        const res = await api.get<{
+          success: boolean
+          counts?: { pending: number }
+        }>('/astrologer-applications/admin?status=pending').catch(() => null)
+        if (res?.counts?.pending !== undefined) {
+          setPendingCount(res.counts.pending)
+        }
+      } catch {}
+    }
+
+    fetchPending()
+    const timer = setInterval(fetchPending, 8000)
+    return () => clearInterval(timer)
+  }, [])
 
   return (
     <div className={cn("pb-12 h-screen border-r bg-card flex flex-col", className)}>
@@ -131,21 +157,32 @@ export function Sidebar({ className, isMobileOpen, onClose }: { className?: stri
         <div className="px-3">
           <div className="space-y-1">
             {SIDEBAR_ITEMS.map((item) => {
-              const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+              const isActive =
+                item.href === "/astrologers"
+                  ? pathname === "/astrologers"
+                  : pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+
+              const isVerificationItem = item.href === "/astrologers/verification"
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors relative",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <item.icon className={cn("h-4 w-4", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
-                  {item.title}
+                  <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+                  <span className="truncate">{item.title}</span>
+                  {isVerificationItem && pendingCount > 0 && (
+                    <span className="ml-auto px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+                      {pendingCount}
+                    </span>
+                  )}
                 </Link>
               )
             })}

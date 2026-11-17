@@ -22,6 +22,10 @@ export interface AstrologerProfile {
   experience_years: number;
   hourly_rate: number;
   per_minute_rate: number;
+  call_per_minute_rate?: number;
+  is_muhurat_eligible?: boolean;
+  is_chat_enabled?: boolean;
+  is_call_enabled?: boolean;
   is_verified: boolean;
   verification_status: 'pending' | 'approved' | 'rejected';
   is_online: boolean;
@@ -43,7 +47,9 @@ export interface Consultation {
   start_time?: string | null;
   astrologer_joined_at?: string | null;
   end_time?: string | null;
+  total_duration_seconds?: number;
   total_amount?: number;
+  astrologer_earnings?: number;
   customer_name?: string;
   customer_avatar?: string;
   created_at: string;
