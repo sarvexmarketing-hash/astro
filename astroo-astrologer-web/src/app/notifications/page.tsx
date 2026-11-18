@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usersService } from "@/services/users";
 import { AppNotification } from "@/lib/types";
-import { Bell, CheckCheck, Clock, ShieldAlert, Sparkles, MessageSquare, Phone, Wallet } from "lucide-react";
+import { Bell, CheckCheck, Clock, ShieldAlert, Sparkles, MessageSquare, Phone, Wallet, CheckCircle2 } from "lucide-react";
 
 export default function AstrologerNotificationsPage() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -53,6 +53,9 @@ export default function AstrologerNotificationsPage() {
       case "payout":
       case "earnings":
         return <Wallet className="w-5 h-5 text-emerald-400" />;
+      case "astrologer_approved":
+        return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
+      case "astrologer_rejected":
       case "security":
         return <ShieldAlert className="w-5 h-5 text-rose-400" />;
       default:

@@ -40,9 +40,19 @@ export default function AstrologerHeader({ onMenuToggle }: HeaderProps) {
     };
     window.addEventListener('astro_online_status_changed', handleSync);
 
+    const handleVerifChanged = () => {
+      usersService.getNotifications(10).then((notifs) => {
+        if (isMounted) {
+          setUnreadCount(notifs.filter((n) => !n.is_read).length);
+        }
+      }).catch(() => {});
+    };
+    window.addEventListener('astro_verification_status_changed', handleVerifChanged);
+
     return () => {
       isMounted = false;
       window.removeEventListener('astro_online_status_changed', handleSync);
+      window.removeEventListener('astro_verification_status_changed', handleVerifChanged);
     };
   }, []);
 
