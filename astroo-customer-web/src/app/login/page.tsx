@@ -49,7 +49,7 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
 
 const GOOGLE_CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-  '802385001901-6gksjs13opqpggp13841rqe33340psp2.apps.googleusercontent.com';
+  '844336558857-n6s95nb6uc43cmp7aonedvpcpgaber8h.apps.googleusercontent.com';
 
 function LoginContent() {
   const router = useRouter();
