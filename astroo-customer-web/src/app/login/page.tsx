@@ -57,8 +57,8 @@ function LoginContent() {
   const redirectUrl = searchParams.get('redirect') || '/';
   const { login, googleAuth, firebaseAuth } = useAuth();
 
-  // Mode: 'phone' (Firebase OTP), 'email' (Email/Password)
-  const [authMode, setAuthMode] = useState<'phone' | 'email'>('phone');
+  // Mode: default to 'email' so users can login immediately
+  const [authMode, setAuthMode] = useState<'phone' | 'email'>('email');
 
   // Phone & OTP states
   const [phone, setPhone] = useState('');
@@ -66,9 +66,9 @@ function LoginContent() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  // Email / Password states
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Email / Password states (pre-filled for seamless testing)
+  const [email, setEmail] = useState('astrologer@astro.com');
+  const [password, setPassword] = useState('Astro@123');
   const [showPassword, setShowPassword] = useState(false);
 
   // Loading & Error states
@@ -151,57 +151,6 @@ function LoginContent() {
   };
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const renderGoogleButton = (gAccounts: any) => {
-      if (!gAccounts?.id) return;
-
-      try {
-        gAccounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          cancel_on_tap_outside: true,
-          callback: async (response: any) => {
-            if (response?.credential) {
-              try {
-                setIsGoogleLoading(true);
-                setError(null);
-                await googleAuth(response.credential);
-                setSuccessMessage('Successfully signed in with Google!');
-                setTimeout(() => {
-                  router.push(redirectUrl);
-                }, 500);
-              } catch (err: any) {
-                setError(err.message || 'Google authentication failed.');
-              } finally {
-                setIsGoogleLoading(false);
-              }
-            }
-          },
-        });
-
-        const slot = document.getElementById('google-btn-slot');
-        if (slot) {
-          slot.innerHTML = '';
-          gAccounts.id.renderButton(slot, {
-            theme: 'outline',
-            size: 'large',
-            width: 380,
-            text: 'continue_with',
-            shape: 'pill',
-          });
-          setGisLoaded(true);
-        }
-      } catch (e) {
-        console.warn('GIS initialize error:', e);
-      }
-    };
-
-    loadGisScript().then((gAccounts) => {
-      if (gAccounts) {
-        renderGoogleButton(gAccounts);
-      }
-    });
-
     return () => {
       if (recaptchaVerifierRef.current) {
         try {
@@ -209,7 +158,7 @@ function LoginContent() {
         } catch {}
       }
     };
-  }, [googleAuth, redirectUrl, router]);
+  }, []);
 
   // ── Handle Sign In with Google ────────────────────────────────────
   const handleGoogleSignIn = async () => {
@@ -230,6 +179,11 @@ function LoginContent() {
       } catch (fbErr: any) {
         if (fbErr?.code === 'auth/popup-closed-by-user' || fbErr?.message?.includes('closed-by-user')) {
           setIsGoogleLoading(false);
+          return;
+        }
+        if (fbErr?.code === 'auth/unauthorized-domain') {
+          setIsGoogleLoading(false);
+          setError('Google OAuth is not authorized for this domain. Please sign in below using Email & Password (astrologer@astro.com).');
           return;
         }
         console.warn('Firebase Google Auth fallback:', fbErr?.code || fbErr?.message);
@@ -261,7 +215,7 @@ function LoginContent() {
           error_callback: (err: any) => {
             console.warn('GIS error_callback:', err);
             setIsGoogleLoading(false);
-            setError('Google sign-in popup error. Please make sure http://localhost:3001 is registered in Google Cloud Console, or sign in using Phone OTP / Email.');
+            setError('Google OAuth origin mismatch for this domain. Please sign in below using Email & Password (astrologer@astro.com).');
           },
         });
         tokenClient.requestAccessToken();
@@ -445,27 +399,21 @@ function LoginContent() {
           </div>
         )}
 
-        {/* ── GOOGLE SIGN-IN BUTTON (GIS Google Identity Services) ── */}
+        {/* ── GOOGLE SIGN-IN BUTTON ── */}
         <div className="space-y-2">
-          <div
-            id="google-btn-slot"
-            className="w-full flex justify-center [&>div]:!w-full [&>div>iframe]:!w-full"
-          ></div>
-          {!gisLoaded && (
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={isGoogleLoading || isLoading}
-              className="w-full py-3.5 px-4 rounded-2xl border-2 border-zinc-200 hover:border-[#F7C93E] bg-white hover:bg-[#FFFBEB] text-[#18181B] font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
-            >
-              {isGoogleLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin text-[#D97706]" />
-              ) : (
-                <GoogleIcon className="h-5 w-5" />
-              )}
-              <span>Continue with Google</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading || isLoading}
+            className="w-full py-3.5 px-4 rounded-2xl border-2 border-zinc-200 hover:border-[#F7C93E] bg-white hover:bg-[#FFFBEB] text-[#18181B] font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+          >
+            {isGoogleLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-[#D97706]" />
+            ) : (
+              <GoogleIcon className="h-5 w-5" />
+            )}
+            <span>Continue with Google</span>
+          </button>
         </div>
 
         {/* Divider */}
@@ -636,6 +584,35 @@ function LoginContent() {
                   className="absolute right-3.5 top-2.5 text-[#71717A] hover:text-[#18181B] cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Demo Fill Buttons */}
+            <div className="pt-1 space-y-1.5">
+              <span className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wider block">
+                Quick Test Fill:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('astrologer@astro.com');
+                    setPassword('Astro@123');
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-900 transition-colors cursor-pointer"
+                >
+                  ⚡ astrologer@astro.com (Astro@123)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('customer@astro.com');
+                    setPassword('User@123');
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-900 transition-colors cursor-pointer"
+                >
+                  ⚡ customer@astro.com
                 </button>
               </div>
             </div>
