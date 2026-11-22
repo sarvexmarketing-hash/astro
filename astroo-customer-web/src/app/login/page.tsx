@@ -477,6 +477,42 @@ function LoginContent() {
           <div className="flex-grow border-t border-[#FDE68A]/60"></div>
         </div>
 
+        {/* Quick Demo Fill Buttons */}
+        <div className="p-2.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-[#92400E] uppercase tracking-wider flex items-center gap-1">
+              ⚡ Quick Test Login (1-Click Fill)
+            </span>
+            <span className="text-[10px] text-[#A1A1AA]">No Google OAuth needed</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('email');
+                setEmail('customer@astro.com');
+                setPassword('User@123');
+                setError(null);
+              }}
+              className="flex-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-amber-100 border border-amber-300 text-[11px] font-bold text-[#78350F] shadow-2xs hover:shadow-xs transition-all cursor-pointer text-center"
+            >
+              Seeker Demo (₹500 Balance)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('email');
+                setEmail('javedsayed133@gmail.com');
+                setPassword('Password123!');
+                setError(null);
+              }}
+              className="flex-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-amber-100 border border-amber-300 text-[11px] font-bold text-[#78350F] shadow-2xs hover:shadow-xs transition-all cursor-pointer text-center"
+            >
+              Javed Sayed (Password123!)
+            </button>
+          </div>
+        </div>
+
         {/* Auth Mode Toggle (Phone OTP vs Email) */}
         <div className="flex rounded-xl bg-[#FEF3C7]/60 p-1 border border-[#FDE68A]">
           <button
@@ -636,6 +672,35 @@ function LoginContent() {
                   className="absolute right-3.5 top-2.5 text-[#71717A] hover:text-[#18181B] cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Demo Fill Buttons */}
+            <div className="pt-1 space-y-1.5">
+              <span className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wider block">
+                Quick Test Fill:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('customer@astro.com');
+                    setPassword('User@123');
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-900 transition-colors cursor-pointer"
+                >
+                  ⚡ Seeker (₹500 Balance)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('javedsayed133@gmail.com');
+                    setPassword('Password123!');
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-900 transition-colors cursor-pointer"
+                >
+                  ⚡ Javed Sayed
                 </button>
               </div>
             </div>
