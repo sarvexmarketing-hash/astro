@@ -40,6 +40,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: 'ymC7axLgV4Eh5t6COouOlr7-HkmwdL5YfaFeSYAurPQ',
+  },
 };
 
 export default function RootLayout({
@@ -50,6 +53,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="google-site-verification" content="ymC7axLgV4Eh5t6COouOlr7-HkmwdL5YfaFeSYAurPQ" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/images/app_logo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/images/app_logo.png" />
