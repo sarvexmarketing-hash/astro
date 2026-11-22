@@ -22,13 +22,17 @@ import {
   ChevronUp,
   AlertCircle,
   ShieldCheck,
+  Camera,
+  X,
+  ZoomIn,
 } from 'lucide-react';
 
 const QUICK_RESPONSES = [
-  '🙏 Pranaam! Please share your birth details (Date, Time, Place).',
-  '⭐ Analyzing your Kundli planetary chart positions now...',
-  '🪐 Your 10th house indicates strong career and wealth opportunities.',
-  '✨ Relationship harmony will improve after the upcoming transit.',
+  '🙏 Pranaam! Please share your palm photo or birth details.',
+  '✋ Analyzing your palm photo: Your Life Line and Mount of Venus indicate strong vitality!',
+  '✋ Your Head Line shows high analytical sharpness and leadership potential.',
+  '✋ Your Fate Line reveals an auspicious financial breakthrough ahead.',
+  '🪐 Your planetary positions indicate upcoming prosperity and relief.',
   '🕉️ Recommended remedy: Light a diya and chant Gayatri Mantra.',
 ];
 
@@ -42,6 +46,8 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+  const [selectedImageModal, setSelectedImageModal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnding, setIsEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -192,13 +198,29 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
+  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPendingPhoto(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent, customPhoto?: string | null) => {
     if (e) e.preventDefault();
     const content = inputText.trim();
-    if (!content || !user || !consultation) return;
+    const activePhoto = customPhoto !== undefined ? customPhoto : pendingPhoto;
+
+    if ((!content && !activePhoto) || !user || !consultation) return;
 
     setInputText('');
+    setPendingPhoto(null);
 
+    const effectiveText = content || (activePhoto ? '📷 Astrological Chart / Remedy Photo' : '');
     const tempId = `astro_${Date.now()}`;
     const optimisticMessage: ChatMessage = {
       id: tempId,
@@ -206,9 +228,10 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
       consultationId,
       senderId: user.id,
       senderRole: 'astrologer',
-      content,
-      text: content,
-      messageType: 'text',
+      content: effectiveText,
+      text: effectiveText,
+      mediaUrl: activePhoto || undefined,
+      messageType: activePhoto ? 'image' : 'text',
       createdAt: new Date().toISOString(),
     };
 
@@ -219,8 +242,9 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
       sendMessage({
         consultationId,
         recipientId: consultation.user_id,
-        content,
-        messageType: 'text',
+        content: effectiveText,
+        mediaUrl: activePhoto || undefined,
+        messageType: activePhoto ? 'image' : 'text',
         id: tempId,
       });
     } else {
@@ -229,7 +253,9 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
         await consultationsService.sendMessage({
           consultationId,
           recipientId: consultation.user_id,
-          content,
+          content: effectiveText,
+          mediaUrl: activePhoto || undefined,
+          messageType: activePhoto ? 'image' : 'text',
           id: tempId,
         });
       } catch (err) {
@@ -445,13 +471,29 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
                   </span>
                 )}
                 <div
-                  className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-2xs ${
+                  className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-2.5 sm:p-3 text-xs sm:text-sm leading-relaxed shadow-2xs ${
                     isMe
                       ? 'bg-[#FEF08A] text-[#78350F] border border-[#F7C93E] font-medium rounded-tr-xs'
-                      : 'bg-white border border-[#FDE68A]/80 text-[#18181B] rounded-tl-xs'
+                      : 'bg-white border border-[#FDE68A] text-[#18181B] rounded-tl-xs'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content || msg.text}</p>
+                  {(msg.mediaUrl || (msg as any).media_url) && (
+                    <div className="relative mb-2 overflow-hidden rounded-xl bg-black/10 group cursor-pointer">
+                      <img
+                        src={msg.mediaUrl || (msg as any).media_url}
+                        alt="Seeker Palm Photo"
+                        onClick={() => setSelectedImageModal(msg.mediaUrl || (msg as any).media_url)}
+                        className="max-h-72 sm:max-h-96 w-full object-contain rounded-xl hover:opacity-95 transition-opacity"
+                      />
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-md">
+                        <ZoomIn className="w-3.5 h-3.5 text-amber-300" />
+                        <span className="font-semibold">Click to examine lines</span>
+                      </div>
+                    </div>
+                  )}
+                  {msg.content || msg.text ? (
+                    <p className="px-1 whitespace-pre-wrap">{msg.content || msg.text}</p>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-[#A1A1AA] mt-0.5 px-1.5">
                   <span>
@@ -499,23 +541,62 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
       {/* ── Practitioner Composer Input ── */}
       <div className="pt-1 shrink-0">
         {isConsultationActive ? (
-          <form onSubmit={handleSendMessage} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Type your astrological advice, planetary analysis or remedies..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-2xl bg-white border border-[#FDE68A] text-[#18181B] placeholder-[#A1A1AA] text-sm focus:outline-none focus:border-[#F59E0B] focus:ring-1 focus:ring-[#F59E0B] shadow-2xs transition-all"
-            />
-            <button
-              type="submit"
-              disabled={!inputText.trim()}
-              className="px-5 py-3 rounded-2xl bg-[#FEF08A] hover:bg-[#FACC15] text-[#78350F] font-extrabold flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-xs border border-[#F7C93E] active:scale-98 transition-all shrink-0"
-            >
-              <Send className="h-4 w-4 text-[#B45309]" />
-              <span className="hidden sm:inline">Send</span>
-            </button>
-          </form>
+          <div>
+            {/* Pending Photo Preview Bar */}
+            {pendingPhoto && (
+              <div className="mb-2 p-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <img
+                    src={pendingPhoto}
+                    alt="Pending upload"
+                    className="w-12 h-12 object-cover rounded-xl border border-amber-300 shadow-2xs"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-amber-950">📷 Photo Attached</span>
+                    <p className="text-[10px] text-zinc-500">Will be sent to {seekerName}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPendingPhoto(null)}
+                  className="p-1 text-zinc-400 hover:text-zinc-700 rounded-lg hover:bg-amber-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <label
+                className="w-12 h-12 rounded-2xl bg-white border border-[#FDE68A] hover:bg-[#FEF9C3] text-amber-800 flex items-center justify-center transition-all cursor-pointer flex-shrink-0 shadow-2xs"
+                title="Attach Chart or Remedy Photo"
+              >
+                <Camera className="w-4 h-4 text-amber-700" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoSelected}
+                />
+              </label>
+
+              <input
+                type="text"
+                placeholder={pendingPhoto ? "Add explanation with photo..." : "Type your astrological advice, palm reading, or remedies..."}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-2xl bg-white border border-[#FDE68A] text-[#18181B] placeholder-[#A1A1AA] text-sm focus:outline-none focus:border-[#F59E0B] focus:ring-1 focus:ring-[#F59E0B] shadow-2xs transition-all"
+              />
+              <button
+                type="submit"
+                disabled={!inputText.trim() && !pendingPhoto}
+                className="px-5 py-3 rounded-2xl bg-[#FEF08A] hover:bg-[#FACC15] text-[#78350F] font-extrabold flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer shadow-xs border border-[#F7C93E] active:scale-98 transition-all shrink-0"
+              >
+                <Send className="h-4 w-4 text-[#B45309]" />
+                <span className="hidden sm:inline">Send</span>
+              </button>
+            </form>
+          </div>
         ) : (
           <div className="p-3.5 rounded-2xl bg-white border border-[#FDE68A] text-center text-xs font-semibold text-[#71717A] shadow-xs">
             This consultation has ended.{' '}
@@ -525,6 +606,29 @@ export default function AstrologerChatPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </div>
+
+      {/* ── Image Lightbox Modal ── */}
+      {selectedImageModal && (
+        <div
+          onClick={() => setSelectedImageModal(null)}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+            <button
+              onClick={() => setSelectedImageModal(null)}
+              className="absolute -top-10 right-0 text-white/80 hover:text-white p-2"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={selectedImageModal}
+              alt="Enlarged Palm Photo"
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+            />
+            <p className="text-white/80 text-xs mt-2 font-medium">Click anywhere to close</p>
+          </div>
+        </div>
+      )}
 
       {/* ── End Consultation Confirmation Modal ── */}
       {showEndConfirm && (

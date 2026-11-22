@@ -58,6 +58,7 @@ export const consultationsService = {
     consultationId: string;
     recipientId?: string;
     content: string;
+    mediaUrl?: string;
     messageType?: string;
     id?: string;
   }): Promise<ChatMessage> {

@@ -48,6 +48,7 @@ export default function Navbar() {
     { label: "Astro Shop & Gems", icon: "💎", href: "/shop" },
     { label: "Consultations", icon: "💬", href: "/astrologers?channel=chat" },
     { label: "Horoscope", icon: "☀️", href: "/#horoscope" },
+    { label: "Palm Reading", icon: "✋", href: "/palm-reading" },
     { label: "Free Services", icon: "⭐", href: "/kundli" },
     { label: "Calculators", icon: "🧮", href: "/kundli" },
     { label: "Panchang", icon: "📅", href: "/muhurat" },
@@ -59,6 +60,7 @@ export default function Navbar() {
   const desktopNavLinks = [
     { label: "Chat with Astrologer", href: "/astrologers?channel=chat" },
     { label: "Call Astrologer", href: "/astrologers?channel=call" },
+    { label: "Palm Reading", href: "/palm-reading" },
     { label: "Astro Shop", href: "/shop" },
     { label: "Daily Horoscope", href: "/#horoscope" },
     { label: "Free Kundli", href: "/kundli" },

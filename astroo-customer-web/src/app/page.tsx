@@ -172,7 +172,7 @@ export default function HomePage() {
       "Terms & Conditions":
         "Welcome to Astrowave. By using our consultation features, pooja bookings, and spiritual store, you agree to these Terms.\n\n1. User Account: Users must maintain account confidentiality.\n2. Predictions: Astrology readings are faith and tradition-based advisory services.\n3. Wallet Balances: Wallet recharges are non-transferable.",
       "Privacy Policy":
-        "Your personal privacy and spiritual inquiries are strictly confidential.\n\n1. Data Encryption: Birth details and chat sessions are end-to-end protected.\n2. No Third-Party Sharing: We never sell or share your phone numbers or transcripts.\n3. Secure Transactions: Payments are processed through RBI-certified payment gateways.",
+        "AstroWave — Privacy Policy (Google Play Developer Policy & Data Safety Compliant)\nEffective Date: November 21, 2026 | Astrowave Spiritual Technologies Pvt. Ltd.\n\n1. Applications Covered:\n• AstroWave — Talk to Astrologers (Application ID: Astro.wave_1)\n• AstroWave Astrologer Partner App (Application ID: com.astro.astrologer)\n• Platform services at astrowavebackend-production.up.railway.app\n\n2. Information Collected:\n• Account phone number (secure SMS OTP authentication) and optional Google Sign-in profile.\n• Astrological profile data (birth date, time, location) collected exclusively to compute Vedic Kundli charts and ephemeris.\n• Encrypted in-app chat and consultation records.\n• Astrologer KYC credentials for certified practitioners.\n\n3. Sensitive Android Permissions:\n• Microphone (RECORD_AUDIO): Used strictly during user-initiated WebRTC live voice/video calls. No recording without explicit consent.\n• Camera (CAMERA): Used strictly during user-initiated live video calls and profile capture.\n• Notifications (POST_NOTIFICATIONS): Android 13+ alerts for incoming calls, booking updates, and chat messages.\n• Location (ACCESS_COARSE_LOCATION / ACCESS_FINE_LOCATION): Single-event resolution of coordinates for accurate Vedic Kundli charts. Never continuously tracked.\n\n4. Data Retention & Account Deletion:\n• Users may request permanent deletion of their account and all personal data anytime via Settings > Delete Account or by emailing privacy@astrowave.app (processed within 30 days).\n\n5. Security & Payments:\n• Payments are processed securely via PCI-DSS Level 1 compliant gateways (Razorpay) and Google Play In-App Billing.\n• All network traffic is encrypted via TLS 1.3 / HTTPS and sensitive records with AES-256.",
       "Disclaimer":
         "Astrology, Tarot, Numerology, Palmistry, and Vastu are ancient traditional sciences offering symbolic and psychological insights.\n\n1. Astrological advice does not substitute professional medical, legal, or financial counsel.\n2. Individual results may vary based on personal karma and effort.",
       "About Us":
@@ -184,7 +184,7 @@ export default function HomePage() {
     setCorporateContent(texts[title] || "For corporate inquiries, reach out at contact@astrotalk.com.");
   };
 
-  const categories = ["All", "Vedic", "Kundli", "Love", "Career", "Marriage"];
+  const categories = ["All", "Vedic", "Kundli", "Palmistry", "Love", "Career", "Marriage"];
 
   const filteredAstrologers = astrologers.filter((astro) => {
     if (selectedCategory === "All") return true;
@@ -349,7 +349,7 @@ export default function HomePage() {
           <h2 className="text-lg sm:text-xl font-bold text-[#18181B] mb-3">
             Spiritual & Astrological Services
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
             {/* Tile 1: Chat with Astrologer */}
             <Link
               href="/astrologers?channel=chat"
@@ -374,7 +374,19 @@ export default function HomePage() {
               <span className="text-[10px] text-[#71717A] mt-0.5">Voice Audio</span>
             </Link>
 
-            {/* Tile 3: Daily Horoscope */}
+            {/* Tile 3: Palm Reading (Hastrekha) */}
+            <Link
+              href="/astrologers?specialization=Palmistry&channel=chat"
+              className="p-4 rounded-2xl bg-white border border-[#FDE68A] shadow-xs hover:border-[#F7C93E] hover:shadow-md transition-all flex flex-col items-center text-center group cursor-pointer relative overflow-hidden"
+            >
+              <span className="text-3xl mb-1.5 select-none">✋</span>
+              <span className="text-xs sm:text-sm font-bold text-[#18181B] group-hover:text-[#D97706] transition-colors leading-tight">
+                Palm Reading
+              </span>
+              <span className="text-[10px] text-[#71717A] mt-0.5">Hand Analysis</span>
+            </Link>
+
+            {/* Tile 4: Daily Horoscope */}
             <a
               href="#horoscope"
               className="p-4 rounded-2xl bg-white border border-[#FDE68A] shadow-xs hover:border-[#F7C93E] hover:shadow-md transition-all flex flex-col items-center text-center group cursor-pointer"
@@ -386,7 +398,7 @@ export default function HomePage() {
               <span className="text-[10px] text-[#71717A] mt-0.5">12 Zodiacs</span>
             </a>
 
-            {/* Tile 4: Book Muhurtham */}
+            {/* Tile 5: Book Muhurtham */}
             <Link
               href="/muhurat"
               className="p-4 rounded-2xl bg-white border border-[#FDE68A] shadow-xs hover:border-[#F7C93E] hover:shadow-md transition-all flex flex-col items-center text-center group cursor-pointer"
@@ -398,7 +410,7 @@ export default function HomePage() {
               <span className="text-[10px] text-[#71717A] mt-0.5">Auspicious Dates</span>
             </Link>
 
-            {/* Tile 5: Get Free Kundli */}
+            {/* Tile 6: Get Free Kundli */}
             <Link
               href="/kundli"
               className="p-4 rounded-2xl bg-white border border-[#FDE68A] shadow-xs hover:border-[#F7C93E] hover:shadow-md transition-all flex flex-col items-center text-center group cursor-pointer"
@@ -410,7 +422,7 @@ export default function HomePage() {
               <span className="text-[10px] text-[#71717A] mt-0.5">Janam Chart</span>
             </Link>
 
-            {/* Tile 6: Astro Shop */}
+            {/* Tile 7: Astro Shop & Pooja */}
             <Link
               href="/pooja"
               className="p-4 rounded-2xl bg-white border border-[#FDE68A] shadow-xs hover:border-[#F7C93E] hover:shadow-md transition-all flex flex-col items-center text-center group cursor-pointer"
@@ -1017,7 +1029,15 @@ export default function HomePage() {
             <div className="flex-1 overflow-y-auto text-xs text-[#3F3F46] leading-relaxed whitespace-pre-line pr-1">
               {corporateContent}
             </div>
-            <div className="pt-2 text-right">
+            <div className="pt-2 flex items-center justify-between gap-2">
+              {corporateTitle === "Privacy Policy" ? (
+                <Link
+                  href="/privacy"
+                  className="px-3.5 py-2 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-xs font-bold text-white transition-colors"
+                >
+                  Full Policy Page ➔
+                </Link>
+              ) : <div />}
               <button
                 onClick={() => setCorporateTitle(null)}
                 className="px-4 py-2 rounded-xl bg-[#FEF08A] hover:bg-[#FDE047] text-xs font-bold text-[#78350F] cursor-pointer"

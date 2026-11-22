@@ -15,11 +15,17 @@ import {
   AlertCircle,
   Clock,
   ArrowDown,
+  Camera,
+  Image as ImageIcon,
+  X,
+  ZoomIn,
 } from "lucide-react";
 
 interface LocalChatMessage {
   id: string;
   text: string;
+  mediaUrl?: string;
+  messageType?: string;
   isFromUser: boolean;
   timestamp: string;
   status: "SENDING" | "SENT" | "FAILED";
@@ -42,6 +48,8 @@ export default function ChatScreenPage({
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [messages, setMessages] = useState<LocalChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+  const [selectedImageModal, setSelectedImageModal] = useState<string | null>(null);
   const [sessionDuration, setSessionDuration] = useState(0);
   const [hasAstrologerJoined, setHasAstrologerJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -142,6 +150,8 @@ export default function ChatScreenPage({
           return {
             id: m.id || m._id || String(Date.now()),
             text: m.content || m.text || "",
+            mediaUrl: m.mediaUrl || m.media_url,
+            messageType: m.messageType || m.message_type || (m.mediaUrl || m.media_url ? "image" : "text"),
             isFromUser: isFromMe,
             timestamp: m.createdAt || m.timestamp || new Date().toISOString(),
             status: "SENT",
@@ -231,7 +241,11 @@ export default function ChatScreenPage({
 
         // Deduplicate against recent message from same participant
         const isDup = prev.some((m) => {
-          if ((m.isFromUser === isFromMe) && (m.text?.trim() === (payload.text || payload.content)?.trim())) {
+          if (
+            m.isFromUser === isFromMe &&
+            m.text?.trim() === (payload.text || payload.content)?.trim() &&
+            (m.mediaUrl || '') === (payload.mediaUrl || payload.media_url || '')
+          ) {
             const diff = Math.abs(
               new Date(m.timestamp || Date.now()).getTime() -
               new Date(payload.timestamp || payload.createdAt || Date.now()).getTime()
@@ -246,7 +260,9 @@ export default function ChatScreenPage({
           ...prev,
           {
             id: payloadId || `msg_${Date.now()}`,
-            text: payload.text || payload.content || "",
+            text: payload.text || payload.content || (payload.mediaUrl || payload.media_url ? "📷 Palm Photo" : ""),
+            mediaUrl: payload.mediaUrl || payload.media_url,
+            messageType: payload.messageType || payload.message_type || (payload.mediaUrl || payload.media_url ? "image" : "text"),
             isFromUser: isFromMe,
             timestamp: payload.timestamp || payload.createdAt || new Date().toISOString(),
             status: "SENT",
@@ -358,14 +374,31 @@ export default function ChatScreenPage({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const handleSendMessage = async (textToSend: string) => {
-    const trimmed = textToSend.trim();
-    if (!trimmed || !consultation?.id) return;
+  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPendingPhoto(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleSendMessage = async (textToSend: string, photoToSend?: string | null) => {
+    const trimmed = textToSend.trim();
+    const activePhoto = photoToSend !== undefined ? photoToSend : pendingPhoto;
+
+    if ((!trimmed && !activePhoto) || !consultation?.id) return;
+
+    const effectiveText = trimmed || (activePhoto ? "📷 Palm Photo for analysis" : "");
     const msgId = `client_${Date.now()}`;
     const newMsg: LocalChatMessage = {
       id: msgId,
-      text: trimmed,
+      text: effectiveText,
+      mediaUrl: activePhoto || undefined,
+      messageType: activePhoto ? "image" : "text",
       isFromUser: true,
       timestamp: new Date().toISOString(),
       status: "SENDING",
@@ -373,14 +406,16 @@ export default function ChatScreenPage({
 
     setMessages((prev) => [...prev, newMsg]);
     setMessageText("");
+    setPendingPhoto(null);
 
     // 1. Instant Socket.IO emission to room and astrologer if connected
     if (socket && isConnected) {
       socket.emit("send_message", {
         consultationId: consultation.id,
         recipientId: astrologerId,
-        content: trimmed,
-        messageType: "text",
+        content: effectiveText,
+        mediaUrl: activePhoto || undefined,
+        messageType: activePhoto ? "image" : "text",
         id: msgId,
       });
       setTimeout(() => {
@@ -394,7 +429,9 @@ export default function ChatScreenPage({
         await consultationsService.sendMessage({
           consultationId: consultation.id,
           recipientId: astrologerId,
-          content: trimmed,
+          content: effectiveText,
+          mediaUrl: activePhoto || undefined,
+          messageType: activePhoto ? "image" : "text",
           id: msgId,
         });
         setMessages((prev) =>
@@ -644,13 +681,29 @@ export default function ChatScreenPage({
                 className={`flex flex-col ${message.isFromUser ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[280px] sm:max-w-md px-4 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                  className={`max-w-[280px] sm:max-w-md p-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                     message.isFromUser
                       ? "bg-[#D97706] text-white rounded-br-xs shadow-xs"
                       : "bg-[#FFFBEB] border border-[#FEF08A] text-[#18181B] rounded-bl-xs shadow-2xs"
                   }`}
                 >
-                  <p>{message.text}</p>
+                  {message.mediaUrl && (
+                    <div className="relative mb-2 overflow-hidden rounded-xl bg-black/10 group cursor-pointer">
+                      <img
+                        src={message.mediaUrl}
+                        alt="Palm Photo"
+                        onClick={() => setSelectedImageModal(message.mediaUrl!)}
+                        className="max-h-64 sm:max-h-80 w-full object-contain rounded-xl hover:opacity-95 transition-opacity"
+                      />
+                      <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 opacity-80 group-hover:opacity-100">
+                        <ZoomIn className="w-3 h-3" />
+                        <span>Tap to zoom</span>
+                      </div>
+                    </div>
+                  )}
+                  {message.text && (
+                    <p className="px-1.5 whitespace-pre-wrap">{message.text}</p>
+                  )}
                 </div>
 
                 {message.isFromUser && message.status === "SENDING" && (
@@ -668,6 +721,34 @@ export default function ChatScreenPage({
 
       {/* ── Fixed Input Bar (ChatScreen.kt line 593) ── */}
       <div className="sticky bottom-0 bg-white border-t border-[#FDE68A] p-2.5 sm:p-3 shadow-lg">
+        {/* Pending Palm Photo Preview Bar */}
+        {pendingPhoto && (
+          <div className="max-w-2xl mx-auto mb-2.5 p-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl flex items-center justify-between shadow-2xs">
+            <div className="flex items-center gap-3">
+              <img
+                src={pendingPhoto}
+                alt="Palm preview"
+                className="w-12 h-12 object-cover rounded-xl border-2 border-amber-300 shadow-2xs"
+              />
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-amber-950">✋ Palm Photo Attached</span>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded">Ready</span>
+                </div>
+                <p className="text-[11px] text-zinc-500">Pandit {astrologerName} will inspect your hand lines</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPendingPhoto(null)}
+              className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg hover:bg-amber-100/60 transition-colors"
+              title="Remove photo"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -675,23 +756,60 @@ export default function ChatScreenPage({
           }}
           className="max-w-2xl mx-auto flex items-center gap-2"
         >
+          {/* Photo / Palm Upload Button */}
+          <label
+            className="w-10 h-10 rounded-full bg-[#FFFBEB] border border-[#FDE68A] hover:bg-[#FEF3C7] text-amber-800 flex items-center justify-center transition-all cursor-pointer flex-shrink-0 shadow-2xs"
+            title="Upload Palm Photo for Reading"
+          >
+            <Camera className="w-4 h-4 text-[#D97706]" />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoSelected}
+            />
+          </label>
+
           <input
             type="text"
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={pendingPhoto ? "Add note (e.g. Right hand, career lines)..." : "Type a message or attach palm photo..."}
             className="flex-1 px-4 py-2.5 bg-[#FFFFFF] border border-[#FDE68A] focus:border-[#D97706] rounded-full text-xs sm:text-sm text-[#18181B] focus:outline-none transition-colors"
           />
 
           <button
             type="submit"
-            disabled={!messageText.trim()}
-            className="w-10 h-10 rounded-full bg-[#D97706] hover:bg-[#B45309] disabled:opacity-40 text-white flex items-center justify-center transition-all flex-shrink-0"
+            disabled={!messageText.trim() && !pendingPhoto}
+            className="w-10 h-10 rounded-full bg-[#D97706] hover:bg-[#B45309] disabled:opacity-40 text-white flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-xs"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
       </div>
+
+      {/* ── Image Lightbox Modal ── */}
+      {selectedImageModal && (
+        <div
+          onClick={() => setSelectedImageModal(null)}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+            <button
+              onClick={() => setSelectedImageModal(null)}
+              className="absolute -top-10 right-0 text-white/80 hover:text-white p-2"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={selectedImageModal}
+              alt="Enlarged Palm Photo"
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+            />
+            <p className="text-white/80 text-xs mt-2 font-medium">Click anywhere to close</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

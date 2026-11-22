@@ -2,6 +2,8 @@ import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import {
   getAuth,
   signInWithPhoneNumber,
+  signInWithPopup,
+  GoogleAuthProvider,
   RecaptchaVerifier,
   ConfirmationResult,
   Auth,
@@ -63,6 +65,19 @@ export async function sendPhoneOtpFirebaseWeb(
   }
   const formattedPhone = phoneNumber.startsWith("+") ? phoneNumber : `+91${phoneNumber.replace(/\D/g, "")}`;
   return await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+}
+
+/**
+ * Sign in using Firebase Google popup provider.
+ */
+export async function signInWithGoogleFirebase() {
+  if (!auth) {
+    throw new Error('Firebase Auth is not initialized.');
+  }
+  const provider = new GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+  return await signInWithPopup(auth, provider);
 }
 
 export default app;

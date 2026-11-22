@@ -15,6 +15,7 @@ import {
   FileText,
   Clock,
   ShieldAlert,
+  ShieldCheck,
   ExternalLink,
   Eye,
   RefreshCw,
@@ -608,8 +609,8 @@ export default function AstrologersPage() {
         </div>
       </div>
 
-      <div className="rounded-md border bg-card">
-        <Table>
+      <div className="rounded-md border bg-card overflow-x-auto shadow-sm">
+        <Table className="min-w-[1080px]">
           <TableHeader>
             <TableRow>
               <TableHead>Astrologer / Pandit</TableHead>
@@ -619,7 +620,7 @@ export default function AstrologersPage() {
               <TableHead className="text-right">Earnings</TableHead>
               <TableHead className="text-center">KYC Documents</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-[220px] text-right">Actions</TableHead>
+              <TableHead className="w-[210px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -754,26 +755,40 @@ export default function AstrologersPage() {
 
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 gap-1 shadow-xs transition-all cursor-pointer"
-                        onClick={() => handleOpenPayoutModal(astrologer)}
-                        title="Mark payment payout as done for this astrologer"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        Payout Done
-                      </Button>
+                      {astrologer.verification_status === 'pending' ? (
+                        <Button
+                          size="sm"
+                          className="bg-amber-500 hover:bg-amber-600 text-black font-bold h-8 text-xs gap-1 shadow-xs px-3 cursor-pointer"
+                          onClick={() => handleOpenReviewModal(astrologer)}
+                          title="Review documents and verify astrologer"
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5 text-black" />
+                          Verify & Approve
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 gap-1 shadow-xs transition-all cursor-pointer"
+                            onClick={() => handleOpenPayoutModal(astrologer)}
+                            title="Mark payment payout as done for this astrologer"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                            Payout Done
+                          </Button>
 
-                      <Button
-                        size="sm"
-                        variant={astrologer.verification_status === 'pending' ? "default" : "outline"}
-                        className={astrologer.verification_status === 'pending' ? "bg-amber-500 hover:bg-amber-600 text-black font-semibold h-8 text-xs" : "h-8 text-xs"}
-                        onClick={() => handleOpenReviewModal(astrologer)}
-                      >
-                        <Eye className="h-3.5 w-3.5 mr-1" />
-                        {astrologer.verification_status === 'pending' ? "Verify" : "Review"}
-                      </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs cursor-pointer font-medium"
+                            onClick={() => handleOpenReviewModal(astrologer)}
+                          >
+                            <Eye className="h-3.5 w-3.5 mr-1" />
+                            Review
+                          </Button>
+                        </>
+                      )}
 
                       <DropdownMenu>
                         <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 cursor-pointer">
@@ -787,16 +802,18 @@ export default function AstrologersPage() {
                           >
                             <IndianRupee className="mr-2 h-4 w-4 text-amber-600" /> Edit Rates & Muhurtham
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-emerald-700 font-medium focus:text-emerald-800 focus:bg-emerald-50 cursor-pointer"
-                            onClick={() => handleOpenPayoutModal(astrologer)}
-                          >
-                            <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" /> Mark Payout Done
-                          </DropdownMenuItem>
+                          {astrologer.verification_status === 'verified' && (
+                            <DropdownMenuItem
+                              className="text-emerald-700 font-medium focus:text-emerald-800 focus:bg-emerald-50 cursor-pointer"
+                              onClick={() => handleOpenPayoutModal(astrologer)}
+                            >
+                              <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" /> Mark Payout Done
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           {astrologer.verification_status !== 'verified' && (
                             <DropdownMenuItem
-                              className="text-emerald-600 font-medium focus:text-emerald-600"
+                              className="text-emerald-600 font-medium focus:text-emerald-600 cursor-pointer"
                               onClick={() => handleOpenReviewModal(astrologer)}
                             >
                               <CheckCircle2 className="mr-2 h-4 w-4" /> Approve & Set Rates
@@ -804,7 +821,7 @@ export default function AstrologersPage() {
                           )}
                           {astrologer.verification_status !== 'rejected' && (
                             <DropdownMenuItem
-                              className="text-rose-600 focus:text-rose-600"
+                              className="text-rose-600 focus:text-rose-600 cursor-pointer"
                               onClick={() => {
                                 handleOpenReviewModal(astrologer)
                                 setIsRejecting(true)

@@ -135,6 +135,7 @@ const FALLBACK_ASTROLOGERS: Astrologer[] = [
 const CATEGORIES = [
   "All",
   "Vedic",
+  "Palmistry",
   "Kundli",
   "Tarot",
   "Love & Relationship",
@@ -149,6 +150,10 @@ function AstrologersListContent() {
   const searchParams = useSearchParams();
   const initialChannel = searchParams.get("channel") || "chat"; // 'chat' | 'call' | 'all'
   const isMuhuratView = searchParams.get("service") === "muhurat" || searchParams.get("muhurat") === "true";
+  const initialSpecialization = searchParams.get("specialization") || searchParams.get("category");
+  const isPalmView = Boolean(
+    initialSpecialization?.toLowerCase().includes("palm") || searchParams.get("service") === "palm-reading"
+  );
 
   const { user, isAuthenticated } = useAuth();
   const { socket } = useSocket();
@@ -159,7 +164,9 @@ function AstrologersListContent() {
   const [activeChannel, setActiveChannel] = useState<"chat" | "call" | "all">(
     initialChannel === "call" ? "call" : "chat"
   );
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(
+    isPalmView ? "Palmistry" : (initialSpecialization || "All")
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [onlyOnline, setOnlyOnline] = useState(false);
   const [sortBy, setSortBy] = useState<"rating" | "experience" | "price_asc" | "price_desc">("rating");
@@ -281,6 +288,7 @@ function AstrologersListContent() {
           const matchesCategory =
             specs.includes(target) ||
             bio.includes(target) ||
+            (target.includes("palm") && (specs.includes("palm") || bio.includes("palm") || specs.includes("hastrekha") || bio.includes("hastrekha") || specs.includes("hand"))) ||
             (target.includes("love") && (specs.includes("love") || bio.includes("love") || specs.includes("relationship"))) ||
             (target.includes("career") && (specs.includes("career") || bio.includes("career") || specs.includes("wealth"))) ||
             (target.includes("marriage") && (specs.includes("marriage") || bio.includes("marriage") || specs.includes("kundli")));
@@ -527,6 +535,30 @@ function AstrologersListContent() {
 
       {/* ── Main Astrologer Directory Grid ── */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
+        {(isPalmView || selectedCategory === "Palmistry") && (
+          <div className="mb-5 p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 shadow-2xs flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl select-none">✋</span>
+              <div>
+                <h3 className="text-sm font-bold text-amber-950 flex items-center gap-1.5">
+                  <span>Palm Reading & Hastrekha Shastra</span>
+                  <span className="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full font-bold">Photo Upload Supported</span>
+                </h3>
+                <p className="text-xs text-amber-800/90 mt-0.5">
+                  Start a chat session with any certified palmist below and upload your palm photo directly in chat for an in-depth line reading!
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/palm-reading"
+              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 font-bold text-xs hover:bg-amber-100/50 transition-colors shadow-2xs shrink-0"
+            >
+              <span>Palm Guide</span>
+              <ChevronRight className="w-3.5 h-3.5 text-amber-700" />
+            </Link>
+          </div>
+        )}
+
         {/* Count Bar */}
         <div className="flex items-center justify-between pb-4">
           <p className="text-xs font-bold text-[#71717A]">

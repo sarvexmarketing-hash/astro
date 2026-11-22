@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   setupRecaptcha,
   sendPhoneOtpFirebaseWeb,
+  signInWithGoogleFirebase,
 } from '../../lib/firebase';
 import { ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
 import {
@@ -210,15 +211,33 @@ function LoginContent() {
     };
   }, [googleAuth, redirectUrl, router]);
 
-  // ── Handle Sign In with Google (Zero Redirect URIs, Zero API Keys) ──
+  // ── Handle Sign In with Google ────────────────────────────────────
   const handleGoogleSignIn = async () => {
     setError(null);
     setIsGoogleLoading(true);
 
     try {
+      // 1. First try Firebase Google Sign-In with popup
+      try {
+        const userCred = await signInWithGoogleFirebase();
+        if (userCred?.user) {
+          const idToken = await userCred.user.getIdToken();
+          await firebaseAuth(idToken);
+          setSuccessMessage('Successfully signed in with Google!');
+          setTimeout(() => router.push(redirectUrl), 500);
+          return;
+        }
+      } catch (fbErr: any) {
+        if (fbErr?.code === 'auth/popup-closed-by-user' || fbErr?.message?.includes('closed-by-user')) {
+          setIsGoogleLoading(false);
+          return;
+        }
+        console.warn('Firebase Google Auth fallback:', fbErr?.code || fbErr?.message);
+      }
+
+      // 2. GIS Token Client (official popup flow)
       const gAccounts = await loadGisScript();
 
-      // 1. GIS Token Client (official popup flow without redirect_uri mismatch)
       if (gAccounts?.oauth2) {
         const tokenClient = gAccounts.oauth2.initTokenClient({
           client_id: GOOGLE_CLIENT_ID,
@@ -242,14 +261,14 @@ function LoginContent() {
           error_callback: (err: any) => {
             console.warn('GIS error_callback:', err);
             setIsGoogleLoading(false);
-            setError('Google sign-in popup could not open. Please allow popups or use Email & Password.');
+            setError('Google sign-in popup error. Please make sure http://localhost:3001 is registered in Google Cloud Console, or sign in using Phone OTP / Email.');
           },
         });
         tokenClient.requestAccessToken();
         return;
       }
 
-      // 2. GIS One Tap prompt fallback
+      // 3. GIS One Tap prompt fallback
       if (gAccounts?.id) {
         gAccounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
