@@ -490,25 +490,25 @@ function LoginContent() {
               type="button"
               onClick={() => {
                 setAuthMode('email');
+                setEmail('astrologer@astro.com');
+                setPassword('Astro@123');
+                setError(null);
+              }}
+              className="flex-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-amber-100 border border-amber-300 text-[11px] font-bold text-[#78350F] shadow-2xs hover:shadow-xs transition-all cursor-pointer text-center"
+            >
+              ⚡ Test User (astrologer@astro.com)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('email');
                 setEmail('customer@astro.com');
                 setPassword('User@123');
                 setError(null);
               }}
               className="flex-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-amber-100 border border-amber-300 text-[11px] font-bold text-[#78350F] shadow-2xs hover:shadow-xs transition-all cursor-pointer text-center"
             >
-              Seeker Demo (₹500 Balance)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode('email');
-                setEmail('javedsayed133@gmail.com');
-                setPassword('Password123!');
-                setError(null);
-              }}
-              className="flex-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-amber-100 border border-amber-300 text-[11px] font-bold text-[#78350F] shadow-2xs hover:shadow-xs transition-all cursor-pointer text-center"
-            >
-              Javed Sayed (Password123!)
+              Seeker Demo (₹500)
             </button>
           </div>
         </div>
@@ -685,22 +685,22 @@ function LoginContent() {
                 <button
                   type="button"
                   onClick={() => {
+                    setEmail('astrologer@astro.com');
+                    setPassword('Astro@123');
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-900 transition-colors cursor-pointer"
+                >
+                  ⚡ astrologer@astro.com (Astro@123)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
                     setEmail('customer@astro.com');
                     setPassword('User@123');
                   }}
                   className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-900 transition-colors cursor-pointer"
                 >
-                  ⚡ Seeker (₹500 Balance)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('javedsayed133@gmail.com');
-                    setPassword('Password123!');
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-900 transition-colors cursor-pointer"
-                >
-                  ⚡ Javed Sayed
+                  ⚡ customer@astro.com
                 </button>
               </div>
             </div>
