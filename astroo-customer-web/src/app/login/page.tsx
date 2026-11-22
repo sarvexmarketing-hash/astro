@@ -7,7 +7,6 @@ import { useAuth } from '../../context/AuthContext';
 import {
   setupRecaptcha,
   sendPhoneOtpFirebaseWeb,
-  signInWithGoogleFirebase,
 } from '../../lib/firebase';
 import { ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
 import {
@@ -166,25 +165,7 @@ function LoginContent() {
     setIsGoogleLoading(true);
 
     try {
-      // 1. Try Firebase Google Sign-In popup
-      try {
-        const userCred = await signInWithGoogleFirebase();
-        if (userCred?.user) {
-          const idToken = await userCred.user.getIdToken();
-          await firebaseAuth(idToken);
-          setSuccessMessage('Successfully signed in with Google!');
-          setTimeout(() => router.push(redirectUrl), 500);
-          return;
-        }
-      } catch (fbErr: any) {
-        if (fbErr?.code === 'auth/popup-closed-by-user' || fbErr?.message?.includes('closed-by-user')) {
-          setIsGoogleLoading(false);
-          return;
-        }
-        console.warn('Firebase Google Auth fallback:', fbErr?.code || fbErr?.message);
-      }
-
-      // 2. GIS Token Client (official Google Identity Services popup)
+      // Official Google Identity Services (GIS) — Opens directly to accounts.google.com without Firebase auth handlers
       const gAccounts = await loadGisScript();
 
       if (gAccounts?.oauth2) {
@@ -211,7 +192,7 @@ function LoginContent() {
             console.warn('GIS error_callback:', err);
             setIsGoogleLoading(false);
             setError(
-              'Google Sign-In error. If using a custom domain, please ensure this origin is authorized in Google Cloud Console, or log in with Email & Password.'
+              'Google Sign-In popup error. Please allow popups or use Email & Password.'
             );
           },
         });
@@ -219,7 +200,7 @@ function LoginContent() {
         return;
       }
 
-      // 3. GIS One Tap prompt fallback
+      // GIS One Tap prompt fallback
       if (gAccounts?.id) {
         gAccounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
