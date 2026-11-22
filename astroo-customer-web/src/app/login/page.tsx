@@ -76,8 +76,9 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Recaptcha verifier ref
+  // Recaptcha verifier ref & GIS token client ref
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const tokenClientRef = useRef<any>(null);
   const [gisLoaded, setGisLoaded] = useState(false);
 
   // Ensure GIS script is loaded
@@ -149,27 +150,11 @@ function LoginContent() {
     });
   };
 
+  // Pre-initialize Google Identity Services on page mount so popup is never blocked
   useEffect(() => {
-    return () => {
-      if (recaptchaVerifierRef.current) {
-        try {
-          recaptchaVerifierRef.current.clear();
-        } catch { }
-      }
-    };
-  }, []);
-
-  // ── Handle Sign In with Google ────────────────────────────────────
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setIsGoogleLoading(true);
-
-    try {
-      // Official Google Identity Services (GIS) — Opens directly to accounts.google.com without Firebase auth handlers
-      const gAccounts = await loadGisScript();
-
+    loadGisScript().then((gAccounts) => {
       if (gAccounts?.oauth2) {
-        const tokenClient = gAccounts.oauth2.initTokenClient({
+        tokenClientRef.current = gAccounts.oauth2.initTokenClient({
           client_id: GOOGLE_CLIENT_ID,
           scope: 'email profile openid',
           callback: async (tokenRes: any) => {
@@ -182,39 +167,81 @@ function LoginContent() {
               } catch (err: any) {
                 setError(err.message || 'Google authentication failed on server.');
               }
-            } else if (tokenRes?.error) {
-              if (tokenRes.error !== 'popup_closed_by_user') {
-                setError(tokenRes.error_description || 'Google sign-in error: ' + tokenRes.error);
-              }
+            } else if (tokenRes?.error && tokenRes.error !== 'popup_closed_by_user') {
+              setError(tokenRes.error_description || 'Google sign-in error: ' + tokenRes.error);
             }
           },
           error_callback: (err: any) => {
             console.warn('GIS error_callback:', err);
             setIsGoogleLoading(false);
             setError(
-              'Google Sign-In popup error. Please allow popups or use Email & Password.'
+              'Google Sign-In popup was blocked by browser. Please allow popups or use Email & Password.'
             );
           },
         });
-        tokenClient.requestAccessToken();
-        return;
+        setGisLoaded(true);
       }
+    });
 
-      // GIS One Tap prompt fallback
-      if (gAccounts?.id) {
-        gAccounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            setIsGoogleLoading(false);
-          }
-        });
-        return;
+    return () => {
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+        } catch { }
       }
-    } catch (tokenErr: any) {
-      console.warn('Google Sign-In error:', tokenErr);
+    };
+  }, [redirectUrl]);
+
+  // ── Handle Sign In with Google ────────────────────────────────────
+  const handleGoogleSignIn = () => {
+    setError(null);
+    setIsGoogleLoading(true);
+
+    // If pre-initialized, fire synchronously within user click event to bypass browser popup blockers
+    if (tokenClientRef.current) {
+      try {
+        tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (err: any) {
+        console.warn('TokenClient request error:', err);
+      }
     }
 
-    setError('Could not connect to Google Sign-In. Please sign in using Email & Password or Phone OTP.');
-    setIsGoogleLoading(false);
+    // Fallback if user clicked before script finished loading
+    loadGisScript()
+      .then((gAccounts) => {
+        if (gAccounts?.oauth2) {
+          const client = gAccounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'email profile openid',
+            callback: async (tokenRes: any) => {
+              setIsGoogleLoading(false);
+              if (tokenRes?.access_token) {
+                try {
+                  await googleAuth(tokenRes.access_token);
+                  setSuccessMessage('Successfully signed in with Google!');
+                  setTimeout(() => router.push(redirectUrl), 500);
+                } catch (err: any) {
+                  setError(err.message || 'Google authentication failed on server.');
+                }
+              }
+            },
+            error_callback: () => {
+              setIsGoogleLoading(false);
+              setError('Popup was blocked by the browser. Please allow popups for this site.');
+            },
+          });
+          tokenClientRef.current = client;
+          client.requestAccessToken({ prompt: 'select_account' });
+        } else {
+          setIsGoogleLoading(false);
+          setError('Google Sign-In is initializing. Please try again in a moment or use Email & Password.');
+        }
+      })
+      .catch(() => {
+        setIsGoogleLoading(false);
+        setError('Could not connect to Google Sign-In.');
+      });
   };
 
   // ── Handle Firebase Phone OTP Sending ──────────────────────────────
