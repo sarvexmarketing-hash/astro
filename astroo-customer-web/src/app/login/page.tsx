@@ -165,21 +165,8 @@ function LoginContent() {
     setError(null);
     setIsGoogleLoading(true);
 
-    // If on domain where Google OAuth origin is not registered in Google Cloud Console (e.g. astrowave.it.com),
-    // instantly authenticate with the test account so user is never blocked.
-    if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
-      try {
-        await login({ email: 'astrologer@astro.com', password: 'Astro@123' });
-        setSuccessMessage('Logged in successfully!');
-        setTimeout(() => router.push(redirectUrl), 400);
-        return;
-      } catch (err: any) {
-        console.warn('Auto login fallback:', err);
-      }
-    }
-
     try {
-      // 1. First try Firebase Google Sign-In with popup
+      // 1. Try Firebase Google Sign-In popup
       try {
         const userCred = await signInWithGoogleFirebase();
         if (userCred?.user) {
@@ -194,22 +181,10 @@ function LoginContent() {
           setIsGoogleLoading(false);
           return;
         }
-        if (fbErr?.code === 'auth/unauthorized-domain' || fbErr?.message?.includes('unauthorized-domain')) {
-          try {
-            await login({ email: 'astrologer@astro.com', password: 'Astro@123' });
-            setSuccessMessage('Logged in successfully!');
-            setTimeout(() => router.push(redirectUrl), 400);
-            return;
-          } catch {
-            setIsGoogleLoading(false);
-            setError('Google OAuth is not authorized for this domain. Please sign in below using Email & Password (astrologer@astro.com).');
-            return;
-          }
-        }
         console.warn('Firebase Google Auth fallback:', fbErr?.code || fbErr?.message);
       }
 
-      // 2. GIS Token Client (official popup flow)
+      // 2. GIS Token Client (official Google Identity Services popup)
       const gAccounts = await loadGisScript();
 
       if (gAccounts?.oauth2) {
@@ -224,30 +199,20 @@ function LoginContent() {
                 setSuccessMessage('Successfully signed in with Google!');
                 setTimeout(() => router.push(redirectUrl), 500);
               } catch (err: any) {
-                setError(err.message || 'Google authentication failed.');
+                setError(err.message || 'Google authentication failed on server.');
               }
             } else if (tokenRes?.error) {
               if (tokenRes.error !== 'popup_closed_by_user') {
-                try {
-                  await login({ email: 'astrologer@astro.com', password: 'Astro@123' });
-                  setSuccessMessage('Logged in successfully!');
-                  setTimeout(() => router.push(redirectUrl), 400);
-                } catch {
-                  setError(tokenRes.error_description || 'Google sign-in error.');
-                }
+                setError(tokenRes.error_description || 'Google sign-in error: ' + tokenRes.error);
               }
             }
           },
-          error_callback: async (err: any) => {
+          error_callback: (err: any) => {
             console.warn('GIS error_callback:', err);
-            try {
-              await login({ email: 'astrologer@astro.com', password: 'Astro@123' });
-              setSuccessMessage('Logged in successfully!');
-              setTimeout(() => router.push(redirectUrl), 400);
-            } catch {
-              setIsGoogleLoading(false);
-              setError('Google OAuth origin mismatch for this domain. Please sign in below using Email & Password (astrologer@astro.com).');
-            }
+            setIsGoogleLoading(false);
+            setError(
+              'Google Sign-In error. If using a custom domain, please ensure this origin is authorized in Google Cloud Console, or log in with Email & Password.'
+            );
           },
         });
         tokenClient.requestAccessToken();
@@ -256,38 +221,19 @@ function LoginContent() {
 
       // 3. GIS One Tap prompt fallback
       if (gAccounts?.id) {
-        gAccounts.id.prompt(async (notification: any) => {
+        gAccounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            try {
-              await login({ email: 'astrologer@astro.com', password: 'Astro@123' });
-              setSuccessMessage('Logged in successfully!');
-              setTimeout(() => router.push(redirectUrl), 400);
-            } catch {
-              setIsGoogleLoading(false);
-              setError('Please sign in below using Email & Password (astrologer@astro.com).');
-            }
+            setIsGoogleLoading(false);
           }
         });
         return;
       }
     } catch (tokenErr: any) {
-      console.warn('GIS TokenClient error:', tokenErr);
-      try {
-        await login({ email: 'astrologer@astro.com', password: 'Astro@123' });
-        setSuccessMessage('Logged in successfully!');
-        setTimeout(() => router.push(redirectUrl), 400);
-        return;
-      } catch {}
+      console.warn('Google Sign-In error:', tokenErr);
     }
 
-    try {
-      await login({ email: 'astrologer@astro.com', password: 'Astro@123' });
-      setSuccessMessage('Logged in successfully!');
-      setTimeout(() => router.push(redirectUrl), 400);
-    } catch {
-      setError('Could not connect to Google Sign-In. Please sign in using Email & Password (astrologer@astro.com).');
-      setIsGoogleLoading(false);
-    }
+    setError('Could not connect to Google Sign-In. Please sign in using Email & Password or Phone OTP.');
+    setIsGoogleLoading(false);
   };
 
   // ── Handle Firebase Phone OTP Sending ──────────────────────────────
