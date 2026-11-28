@@ -136,17 +136,6 @@ export default function Navbar() {
 
           {/* Right: Language + Wallet + Notifications + Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Admin Badge if admin */}
-            {user && ["admin", "super_admin"].includes(user.role) && (
-              <Link
-                href="/admin"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs font-bold border border-purple-300 transition-all shadow-xs"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-purple-700" />
-                <span>Admin</span>
-              </Link>
-            )}
-
             {/* Language Button: A/आ */}
             <button
               type="button"
