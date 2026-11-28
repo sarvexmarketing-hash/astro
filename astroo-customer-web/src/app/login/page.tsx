@@ -377,8 +377,12 @@ function LoginContent() {
       <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 space-y-5 border border-[#FDE68A] shadow-xl relative animate-in fade-in duration-200">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF9C3] text-[#D97706] border border-[#FDE68A] shadow-xs">
-            <Sparkles className="h-7 w-7 fill-current" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden shadow-xs border border-amber-300 bg-[#FFE814]">
+            <img
+              src="/images/app_logo.png"
+              alt="Astrowave Logo"
+              className="w-full h-full object-cover scale-110"
+            />
           </div>
           <h2 className="text-2xl font-black text-[#18181B] tracking-tight">
             Welcome to Astrowave

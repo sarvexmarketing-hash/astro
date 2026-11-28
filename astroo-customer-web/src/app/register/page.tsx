@@ -58,8 +58,12 @@ function RegisterContent() {
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md bg-white rounded-3xl p-8 space-y-6 border border-[#FDE68A] shadow-xl relative">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF9C3] text-[#D97706] border border-[#FDE68A] shadow-xs">
-            <Sparkles className="h-7 w-7 fill-current" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden shadow-xs border border-amber-300 bg-[#FFE814]">
+            <img
+              src="/images/app_logo.png"
+              alt="Astrowave Logo"
+              className="w-full h-full object-cover scale-110"
+            />
           </div>
           <h2 className="text-2xl font-bold text-[#18181B] tracking-tight">Create Customer Account</h2>
           <p className="text-xs text-[#71717A]">Join Astrowave to start your spiritual journey</p>
