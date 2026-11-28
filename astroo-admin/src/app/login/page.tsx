@@ -185,13 +185,10 @@ export default function LoginPage() {
         {/* Official Brand Logo & Header */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 relative mb-3">
-            <Image
-              src={logoImg}
+            <img
+              src="/images/app_logo.png"
               alt="Astrowave Logo"
-              width={64}
-              height={64}
-              priority
-              className="w-16 h-16 rounded-2xl shadow-sm object-contain"
+              className="w-16 h-16 rounded-2xl shadow-sm object-cover border border-amber-300 bg-[#FFE814]"
             />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#18181B]">

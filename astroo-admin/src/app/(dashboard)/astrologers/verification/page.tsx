@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import { api } from "@/lib/api-client"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -26,7 +27,8 @@ import {
   Award,
   IndianRupee,
   Calendar,
-  UserCheck
+  UserCheck,
+  Users
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -341,10 +343,30 @@ export default function AstrologerVerificationPage() {
             ) : applications.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <ShieldAlert className="h-10 w-10 text-zinc-300" />
-                    <p className="font-semibold text-zinc-700">No applications found</p>
-                    <p className="text-xs">There are no astrologer registration applications under this filter.</p>
+                  <div className="flex flex-col items-center justify-center gap-2 max-w-md mx-auto">
+                    <ShieldAlert className="h-10 w-10 text-amber-500/70" />
+                    <p className="font-semibold text-zinc-800 text-base">No Applications Found</p>
+                    <p className="text-xs text-zinc-500 leading-relaxed">
+                      There are currently no candidate applications in this filter. Registrations submitted through the public <span className="font-semibold text-zinc-700">Become an Astrologer</span> portal will automatically appear here for verification and rate approval.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-3 mt-3">
+                      <Link
+                        href="/astrologers"
+                        className="inline-flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-zinc-900 text-xs font-semibold rounded-xl shadow-xs transition-colors"
+                      >
+                        <Users className="w-4 h-4 mr-1.5" />
+                        View Active Astrologers
+                      </Link>
+                      <a
+                        href="https://astrowave.it.com/become-astrologer"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1.5 border border-zinc-200 hover:bg-zinc-100 text-zinc-700 text-xs font-medium rounded-xl transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-zinc-400" />
+                        Open Application Form
+                      </a>
+                    </div>
                   </div>
                 </TableCell>
               </TableRow>
