@@ -265,8 +265,8 @@ export default function PrivacyPolicyPage() {
               </li>
               <li>
                 <strong>How to Request Deletion:</strong> You can initiate account deletion directly within the mobile application settings (<em>Settings &gt; Account &gt; Delete Account</em>) or by emailing our Data Protection Officer at{" "}
-                <a href="mailto:privacy@astrowave.app" className="text-[#D97706] font-semibold hover:underline">
-                  privacy@astrowave.app
+                <a href="mailto:astrowave.official999@gmail.com" className="text-[#D97706] font-semibold hover:underline">
+                  astrowave.official999@gmail.com
                 </a>. Deletion requests are processed within 30 days.
               </li>
             </ul>
@@ -325,12 +325,8 @@ export default function PrivacyPolicyPage() {
               </p>
               <p>
                 <strong>Email:</strong>{" "}
-                <a href="mailto:privacy@astrowave.app" className="font-semibold underline">
-                  privacy@astrowave.app
-                </a>{" "}
-                /{" "}
-                <a href="mailto:support@astrowave.app" className="font-semibold underline">
-                  support@astrowave.app
+                <a href="mailto:astrowave.official999@gmail.com" className="font-semibold underline">
+                  astrowave.official999@gmail.com
                 </a>
               </p>
               <p>

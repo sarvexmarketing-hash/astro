@@ -957,12 +957,20 @@ export default function HomePage() {
                 <h5 className="font-bold text-[#18181B] tracking-wider uppercase mb-1">
                   CONTACT US
                 </h5>
-                <Link
-                  href="/astrologers?channel=chat"
-                  className="block text-[#52525B] hover:text-[#18181B]"
-                >
-                  💬 24x7 Live Chat Support
-                </Link>
+                <div className="space-y-1 text-xs">
+                  <a
+                    href="mailto:astrowave.official999@gmail.com"
+                    className="block text-[#78350F] font-semibold hover:text-[#D97706] transition-colors break-all"
+                  >
+                    ✉️ astrowave.official999@gmail.com
+                  </a>
+                  <Link
+                    href="/astrologers?channel=chat"
+                    className="block text-[#52525B] hover:text-[#18181B] transition-colors"
+                  >
+                    💬 24x7 Live Chat Support
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

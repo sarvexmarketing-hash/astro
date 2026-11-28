@@ -33,12 +33,15 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-semibold text-[#52525B]">
+          <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#52525B]">
             <Link href="/astrologers" className="hover:text-[#18181B]">Astrologers</Link>
             <Link href="/kundli" className="hover:text-[#18181B]">Free Kundli</Link>
             <Link href="/muhurat" className="hover:text-[#18181B]">Muhurat</Link>
             <Link href="/pooja" className="hover:text-[#18181B]">Pooja</Link>
             <Link href="/privacy" className="hover:text-[#D97706]">Privacy Policy</Link>
+            <a href="mailto:astrowave.official999@gmail.com" className="text-[#78350F] hover:text-[#D97706] font-bold">
+              Contact: astrowave.official999@gmail.com
+            </a>
             <Link href="/astrologer/login" className="hover:text-amber-800 font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-sm">Astrologer Portal</Link>
             <Link href="/admin" className="hover:text-purple-700 font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded-sm">Admin</Link>
           </div>
