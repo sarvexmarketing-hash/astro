@@ -137,7 +137,7 @@ export function Sidebar({ className, isMobileOpen, onClose }: { className?: stri
         <div className="px-3 py-2 flex items-center justify-between lg:justify-start">
           <Link href="/" className="flex items-center gap-2.5 px-4 mb-4">
             <img
-              src="/images/app_logo.png"
+              src="/admin/logo.png"
               alt="Astrowave Logo"
               className="h-8 w-8 rounded-lg object-cover shadow-xs border border-amber-300 bg-[#FFE814]"
             />

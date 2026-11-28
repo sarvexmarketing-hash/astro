@@ -148,26 +148,8 @@ function LoginForm() {
         </button>
       </div>
 
-      {/* Quick Fill Credentials Helper */}
-      <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/80 flex items-center justify-between text-xs">
-        <div>
-          <span className="font-semibold text-amber-900">Admin Credentials:</span>
-          <div className="text-[11px] text-amber-800 font-mono mt-0.5">admin@astroo.com &bull; Admin@123</div>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEmail('admin@astroo.com')
-            setPassword('Admin@123')
-          }}
-          className="px-2.5 py-1 text-[11px] font-semibold bg-amber-200 hover:bg-amber-300 text-amber-900 rounded-lg transition-colors cursor-pointer"
-        >
-          Auto Fill
-        </button>
-      </div>
-
       {/* Security badge footer */}
-      <div className="pt-1 flex items-center justify-center gap-1.5 text-xs text-zinc-500 font-medium">
+      <div className="pt-2 flex items-center justify-center gap-1.5 text-xs text-zinc-500 font-medium">
         <ShieldCheck className="h-4 w-4 text-emerald-600" />
         <span>Authorized Super Admin & Staff Portal</span>
       </div>
@@ -186,7 +168,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 relative mb-3">
             <img
-              src="/images/app_logo.png"
+              src="/admin/logo.png"
               alt="Astrowave Logo"
               className="w-16 h-16 rounded-2xl shadow-sm object-cover border border-amber-300 bg-[#FFE814]"
             />
