@@ -181,7 +181,7 @@ export default function HomePage() {
         "Transparent & Honest Pricing:\n\n• First consultation is completely FREE for new seekers!\n• Astrologer rates start from ₹10/minute based on verified experience.\n• Transparent per-second billing with realtime wallet display.",
     };
     setCorporateTitle(title);
-    setCorporateContent(texts[title] || "For corporate inquiries, reach out at contact@astrotalk.com.");
+    setCorporateContent(texts[title] || "For corporate inquiries, reach out to our 24x7 support team.");
   };
 
   const categories = ["All", "Vedic", "Kundli", "Palmistry", "Love", "Career", "Marriage"];
@@ -892,7 +892,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-xs text-[#71717A] leading-relaxed">
-                Astrotalk is the best astrology website for online Astrology predictions. Talk to Astrologer on call and get answers to all your worries by seeing the future life through Astrology Kundli Predictions from the best Astrologers from India.
+                Astrowave is the best astrology website for online Astrology predictions. Talk to Astrologer on call and get answers to all your worries by seeing the future life through Astrology Kundli Predictions from the best Astrologers from India.
               </p>
             </div>
 
@@ -963,12 +963,6 @@ export default function HomePage() {
                 >
                   💬 24x7 Live Chat Support
                 </Link>
-                <a
-                  href="mailto:contact@astrotalk.com"
-                  className="block text-[#D97706] font-bold hover:underline mt-0.5"
-                >
-                  ✉️ contact@astrotalk.com
-                </a>
               </div>
             </div>
           </div>
