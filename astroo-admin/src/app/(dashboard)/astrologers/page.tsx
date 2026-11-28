@@ -428,12 +428,26 @@ export default function AstrologersPage() {
     if (!confirm("Are you sure you want to delete this astrologer profile? This action cannot be undone.")) return
     try {
       setLoading(true)
-      await api.put(`/admin/users/${id}`, { status: 'deleted' })
+      await api.delete(`/admin/astrologers/${id}`)
       toast.success("Astrologer profile deleted successfully")
       fetchAstrologers()
     } catch (err: any) {
       console.error("Error deleting astrologer:", err)
       toast.error("Failed to delete astrologer: " + (err.message || "Unknown error"))
+      setLoading(false)
+    }
+  }
+
+  const handleClearTestData = async () => {
+    if (!confirm("Are you sure you want to remove all test astrologer data? This will clear all sample and test astrologers from the platform.")) return
+    try {
+      setLoading(true)
+      const res = await api.post('/admin/astrologers/clear-test-data')
+      toast.success(res?.message || "All test astrologer data removed successfully")
+      fetchAstrologers()
+    } catch (err: any) {
+      console.error("Error clearing test data:", err)
+      toast.error("Failed to clear test data: " + (err?.message || "Unknown error"))
       setLoading(false)
     }
   }
@@ -524,6 +538,16 @@ export default function AstrologersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearTestData}
+            disabled={loading}
+            className="text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 font-semibold"
+          >
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Clear Test Astrologers
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchAstrologers} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
