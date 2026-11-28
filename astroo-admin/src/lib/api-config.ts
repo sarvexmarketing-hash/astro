@@ -8,9 +8,11 @@ export function getApiBaseUrl(): string {
       return '/admin/api';
     }
   }
-  if (process.env.NODE_ENV !== 'production') {
-    return 'http://localhost:5001/api';
-  }
-  const url = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+
+  const url =
+    process.env.BACKEND_URL
+      ? (process.env.BACKEND_URL.endsWith('/api') ? process.env.BACKEND_URL : `${process.env.BACKEND_URL}/api`)
+      : process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+
   return url || 'https://astrowavebackend-production.up.railway.app/api';
 }
